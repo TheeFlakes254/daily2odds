@@ -2,7 +2,7 @@
     import Navbar from "$lib/components/navbar1.svelte";
     import PocketBase from 'pocketbase';
     import Footer from "$lib/components/footer.svelte";
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
 
     const pb = new PocketBase('https://odds.pockethost.io');
 
@@ -24,7 +24,7 @@
             userTier = user?.tier || 'free';  // Assume there's a 'tier' field in the user model
             
             // Set item limit based on user's tier
-            switch(userTier) {
+            switch (userTier) {
                 case 'silver':
                     itemLimit = 4;
                     break;
@@ -68,18 +68,14 @@
         }
     }
 
+    // Fetch odds items
     async function fetchAllItems() {
         try {
             loading = true;
             
-            if (!pb || typeof pb.collection !== 'function') {
-                throw new Error('PocketBase client is not properly initialized');
-            }
-
-            // Initialize an empty array to store all items
             let allItems = [];
             let page = 1;
-            const perPage = 500; // Fetch 500 items per request for efficiency
+            const perPage = 500;
             
             while (true) {
                 const response = await pb.collection('Free_Tier').getList(page, perPage, {
@@ -94,17 +90,11 @@
                 
                 allItems = [...allItems, ...batchItems];
                 
-                console.log(`Fetched page ${page}, got ${batchItems.length} items`);
-                
-                // If we got fewer items than requested, we've reached the end
                 if (batchItems.length < perPage) {
                     break;
                 }
-                
                 page++;
             }
-
-            console.log('Total items fetched:', allItems.length);
 
             // Apply the limit based on the user's tier
             if (itemLimit !== Infinity) {
@@ -121,16 +111,50 @@
         }
     }
 
+    // Subscribe to real-time updates for odds
+    function subscribeToOddsUpdates() {
+        pb.collection('Free_Tier').subscribe('*', (e) => {
+            console.log(e.action, e.record);
+
+            if (e.action === 'create' || e.action === 'update') {
+                const existingItemIndex = items.findIndex(item => item.id === e.record.id);
+                if (existingItemIndex !== -1) {
+                    items[existingItemIndex] = {
+                        id: e.record.id,
+                        image: e.record.image,
+                        description: e.record.description
+                    };
+                } else {
+                    items.unshift({
+                        id: e.record.id,
+                        image: e.record.image,
+                        description: e.record.description
+                    });
+                }
+            } else if (e.action === 'delete') {
+                items = items.filter(item => item.id !== e.record.id);
+            }
+        });
+    }
+
+    // Mounting and cleaning up subscriptions
     onMount(async () => {
-        await fetchUserDetails(); // Fetch user tier first
+        await fetchUserDetails();
         await Promise.all([fetchNews(), fetchRecentWins(), fetchAllItems()]);
+        subscribeToOddsUpdates();
+    });
+
+    // Clean up the subscription when component is destroyed
+    onDestroy(() => {
+        pb.collection('Free_Tier').unsubscribe('*');
     });
 </script>
 
-
 <Navbar />
 
-<!-- Recent Wins Section (Image Carousel) -->
+
+
+<!-- Recent Wins Section -->
 <section class="mb-8 flex flex-col items-center ">
     <h2 class="text-2xl font-bold mb-2 text-center">Recent Wins</h2>
     <div class="border-b-4 border-[#064b67] w-20 mb-4"></div>
@@ -150,55 +174,8 @@
     </div>
 </section>
 
-<!-- Services Section with Redesigned Cards -->
-<section class="mb-8">
-    <h2 class="text-2xl font-bold mb-4 text-center ">What We Offer</h2>
-    <div class="flex justify-center space-x-4 mt-4 mx-5">
-        <!-- Card for Free Tier -->
-        <div class="bg-white p-6 rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-            <div class="flex items-center mb-4">
-                <div class="bg-[#064b67] text-white rounded-full p-3 mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold">Free Tier</h3>
-            </div>
-            <p class="text-gray-700">Access free odds and basic features for a seamless experience.</p>
-            <p class="mt-2 font-bold text-gray-800">Subscription: Free</p>
-        </div>
-        
-        <!-- Card for Silver Tier -->
-        <div class="bg-white p-6 rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-            <div class="flex items-center mb-4">
-                <div class="bg-[#064b67] text-white rounded-full p-3 mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18M3 6h18M3 18h18" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold">Silver Tier</h3>
-            </div>
-            <p class="text-gray-700">Enjoy special features like enhanced odds and priority support for an optimal experience.</p>
-            <p class="mt-2 font-bold text-gray-800">Subscription: Ksh 500 ($3.57) Weekly | Ksh 1500 ($10.71) Monthly</p>
-        </div>
 
-        <!-- Card for Gold Tier -->
-        <div class="bg-white p-6 rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-            <div class="flex items-center mb-4">
-                <div class="bg-[#064b67] text-white rounded-full p-3 mr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12c0 4.75-3.58 8.68-8 8.93M3 12c0-4.75 3.58-8.68 8-8.93" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-semibold">Gold Tier</h3>
-            </div>
-            <p class="text-gray-700">Unlock exclusive features like personalized betting options and dedicated account management.</p>
-            <p class="mt-2 font-bold text-gray-800">Subscription: Ksh 700 ($5.00) Weekly | Ksh 2100 ($15.00) Monthly</p>
-        </div>
-    </div>
-</section>
-
-<!-- Odds section -->
+<!-- Odds Section -->
 <section class="my-8 mx-4">
     <h2 class="text-2xl font-bold mb-4 text-center">Odds</h2>
     <p class="text-center mb-4">Your current tier: {userTier} (Odds: {itemLimit === Infinity ? 'Unlimited' : itemLimit} )</p>
@@ -223,7 +200,6 @@
     </div>
 </section>
 
-
 <!-- Upgrade Button -->
 <div class="mt-6 text-center">
     <button class="bg-[#064b67] text-white font-bold py-3 px-6 rounded-full hover:bg-yellow-400 transition duration-300 focus:outline-none">
@@ -231,7 +207,7 @@
     </button>
 </div>
 
-<!-- News Section (Card-style display) -->
+<!-- News Section -->
 <section class="my-8 mx-4">
     <h2 class="text-2xl font-bold mb-4 text-center">Latest News</h2><br>
     
@@ -265,10 +241,5 @@
     .animate-slide {
         display: flex;
         animation: slide 5s linear infinite;
-    }
-
-    .carousel-wrapper {
-        max-width: 80%;
-        margin: 0 auto;
     }
 </style>
