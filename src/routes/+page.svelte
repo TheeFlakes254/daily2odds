@@ -6,6 +6,7 @@
     import Aboutus from '$lib/components/aboutus.svelte';
     import Contact from '$lib/components/contact.svelte';
     import Tips from '$lib/components/tips.svelte';
+    import FAQ from '$lib/components/FAQ.svelte'
 
 </script>
 
@@ -13,6 +14,7 @@
 <Heropage/>
 <Tips/>
 <Aboutus/>
+<FAQ/>
 <Contact/>
 <Footer/>
 

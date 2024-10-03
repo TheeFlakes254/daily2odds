@@ -5,7 +5,6 @@
   </div>
   
   <ul class="flex space-x-6 font-bold mx-auto text-1xl">
-    <li><a href="/tips-and-tricks" class="text-gray-700 hover:text-blue-600 hover:underline transition duration-300">Tips & Tricks</a></li>
     <li><a href="/about-us" class="text-gray-700 hover:text-blue-600 hover:underline transition duration-300">About us</a></li>
     <li><a href="/contact.svelte" class="text-gray-700 hover:text-blue-600 hover:underline transition duration-300">Contact</a></li>
     <li><a href="/faq" class="text-gray-700 hover:text-blue-600 hover:underline transition duration-300">FAQ</a></li>
