@@ -15,6 +15,7 @@
     let itemLimit = 2;      // Default limit for free tier
     let loading = true;
     let userId = '';        // Store logged-in user's ID
+    let currentIndex = 0;   // New state for controlling the current index of the carousel
 
     // Fetch user details including their tier
     async function fetchUserDetails() {
@@ -148,32 +149,50 @@
     onDestroy(() => {
         pb.collection('Free_Tier').unsubscribe('*');
     });
+
+    // New functions for carousel navigation
+    const prevSlide = () => {
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : recentWins.length - 1; // Loop to the last item if at the beginning
+    };
+
+    const nextSlide = () => {
+        currentIndex = (currentIndex < recentWins.length - 1) ? currentIndex + 1 : 0; // Loop to the first item if at the end
+    };
 </script>
 
 <Navbar />
 
-
-
 <!-- Recent Wins Section -->
-<section class="mb-8 flex flex-col items-center ">
+<section class="mb-8 flex flex-col items-center mt-4 ">
     <h2 class="text-2xl font-bold mb-2 text-center">Recent Wins</h2>
     <div class="border-b-4 border-[#064b67] w-20 mb-4"></div>
 
-    <div class="relative overflow-hidden w-full max-w-3xl h-64 flex justify-center items-center">
+    <div class="relative overflow-hidden w-full max-w-3xl h-64">
         {#if loadingWins}
             <p class="text-center text-gray-500">Loading recent wins...</p>
         {:else if recentWins.length === 0}
             <p class="text-center text-gray-500">No recent wins available at the moment.</p>
         {:else}
-            <div class="whitespace-nowrap animate-slide">
+            <div class="flex transition-transform duration-500" style="transform: translateX(-{currentIndex * 100}%);">
                 {#each recentWins as win}
-                    <img src={win.image} alt="Recent Win Image" class="inline-block w-full h-64 object-cover rounded-lg shadow-md mx-2">
+                    <div class="w-full flex-shrink-0">
+                        <img src={win.image} alt="Recent Win Image" class="w-full h-64 object-cover rounded-lg shadow-md">
+                    </div>
                 {/each}
             </div>
         {/if}
+
+        <!-- Navigation Buttons -->
+        {#if recentWins.length > 1} <!-- Show buttons only if there's more than one item -->
+            <button on:click={prevSlide} class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-lg p-2">
+                &lt; <!-- Left arrow for previous -->
+            </button>
+            <button on:click={nextSlide} class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-lg p-2">
+                &gt; <!-- Right arrow for next -->
+            </button>
+        {/if}
     </div>
 </section>
-
 
 <!-- Odds Section -->
 <section class="my-8 mx-4">
@@ -202,9 +221,11 @@
 
 <!-- Upgrade Button -->
 <div class="mt-6 text-center">
-    <button class="bg-[#064b67] text-white font-bold py-3 px-6 rounded-full hover:bg-yellow-400 transition duration-300 focus:outline-none">
-        Upgrade
-    </button>
+    <a href="/payment">
+        <button class="bg-[#064b67] text-white font-bold py-3 px-6 rounded-full hover:bg-yellow-400 transition duration-300 focus:outline-none">
+            Upgrade
+        </button>
+    </a>
 </div>
 
 <!-- News Section -->
@@ -227,19 +248,3 @@
 </section>
 
 <Footer />
-
-<style>
-    @keyframes slide {
-        0% {
-            transform: translateX(0);
-        }
-        100% {
-            transform: translateX(calc(-100% * 0.5));
-        }
-    }
-    
-    .animate-slide {
-        display: flex;
-        animation: slide 5s linear infinite;
-    }
-</style>

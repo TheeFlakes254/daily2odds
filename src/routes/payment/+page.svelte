@@ -1,122 +1,127 @@
 <script>
-    // Define the available packages and subscription periods
-    let packages = [
-        { name: 'Gold', priceWeekly: 700, priceMonthly: 2100 },
-        { name: 'Silver', priceWeekly: 500, priceMonthly: 1500 }
-    ];
-    
-    let subscriptionPeriods = ['Weekly', 'Monthly'];
+  import { onMount } from 'svelte';
+  import PocketBase from 'pocketbase';
+  import Footer from '$lib/components/footer.svelte';
+  import Navbar1 from '$lib/components/navbar1.svelte';
+	import Navbar from '$lib/components/navbar.svelte';
 
-    // Reactive variables to hold the user's selections
-    let selectedPackage = null;
-    let selectedPeriod = null;
-    
-    // Reactive variable for total price
-    let totalPrice = 0;
+  let email = '';
+  let number = '';
+  let proofFile = null; 
+  let statusMessage = '';
+  let isLoading = false;
 
-    // Function to calculate the total price based on selections
-    function calculateTotalPrice() {
-        if (selectedPackage && selectedPeriod) {
-            if (selectedPeriod === 'Weekly') {
-                totalPrice = selectedPackage.priceWeekly;
-            } else if (selectedPeriod === 'Monthly') {
-                totalPrice = selectedPackage.priceMonthly;
-            }
-        } else {
-            totalPrice = 0; // No selection made
-        }
+  let pb;
+
+  onMount(() => {
+    pb = new PocketBase('https://odds.pockethost.io');
+  });
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    statusMessage = '';
+    isLoading = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('number', number);
+      if (proofFile) {
+        formData.append('proof', proofFile);
+      }
+
+      await pb.collection('payment').create(formData);
+      statusMessage = 'Payment proof sent successfully!';
+      resetForm();
+    } catch (error) {
+      console.error('Error sending payment proof:', error);
+      statusMessage = 'Failed to send payment proof. Please try again.';
+    } finally {
+      isLoading = false;
     }
+  }
 
-    // Function to handle payment submission
-    function handlePayment() {
-        const email = document.getElementById("email").value;
-        const screenshot = document.getElementById("screenshot").files[0];
-        
-        if (selectedPackage && selectedPeriod && email && screenshot) {
-            alert(`You selected the ${selectedPackage.name} package, ${selectedPeriod} subscription. Total price is Ksh ${totalPrice}. Please follow the steps to complete payment.`);
-            // Here you can add logic to handle the payment confirmation screenshot
-        } else {
-            alert('Please complete all selections and upload the payment confirmation screenshot.');
-        }
-    }
+  function resetForm() {
+    email = '';
+    number = '';
+    proofFile = null;
+  }
+
+  function handleFileUpload(event) {
+    proofFile = event.target.files[0];
+  }
 </script>
-
-<!-- Payment Page UI -->
-<section class="my-8 mx-4">
-    <h2 class="text-2xl font-bold mb-4 text-center">Choose Your Package</h2>
-
-    <!-- Package Selection -->
-    <div class="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        {#each packages as pkg}
-            <div class={`p-4 border rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-105 cursor-pointer ${selectedPackage === pkg ? 'border-[#064b67] bg-[#f0f4f7]' : 'border-gray-300'}`}
-                 on:click={() => { selectedPackage = pkg; calculateTotalPrice(); }}>
-                <h3 class="text-lg font-bold text-center">{pkg.name} Package</h3>
-                <p class="text-sm text-gray-600 text-center">Weekly: Ksh {pkg.priceWeekly}</p>
-                <p class="text-sm text-gray-600 text-center">Monthly: Ksh {pkg.priceMonthly}</p>
-            </div>
-        {/each}
-    </div>
-
-    <!-- Subscription Period Selection -->
-    <div class="mb-4">
-        <label class="block text-lg font-semibold mb-2">Select Subscription Period:</label>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {#each subscriptionPeriods as period}
-                <div class={`p-4 border rounded-lg shadow-lg transition-transform duration-300 transform hover:scale-105 cursor-pointer ${selectedPeriod === period ? 'border-[#064b67] bg-[#f0f4f7]' : 'border-gray-300'}`}
-                     on:click={() => { selectedPeriod = period; calculateTotalPrice(); }}>
-                    <p class="text-lg text-center">{period} Subscription</p>
-                </div>
-            {/each}
-        </div>
-    </div>
-
-    <!-- Payment Method (M-Pesa) -->
-    <div class="mb-4">
-        <label class="block text-lg font-semibold mb-2">Payment Method: M-Pesa</label>
-        <p class="text-md">Please follow these steps to make your payment:</p>
-        <ol class="list-decimal list-inside mb-4">
-            <li>Go to M-Pesa</li>
-            <li>Select Lipa na M-Pesa</li>
-            <li>Select Pochi la biashara</li>
-            <li>Enter Phone number: <strong>0715978130</strong></li>
-        </ol>
-    </div>
-
-    <!-- Email Entry -->
-    <div class="mb-4">
-        <label for="email" class="block text-lg font-semibold mb-2">Enter Your Email:</label>
-        <input id="email" type="email" class="border rounded-lg p-2 w-full" required />
-    </div>
-
-    <!-- Screenshot Upload -->
-    <div class="mb-4">
-        <label for="screenshot" class="block text-lg font-semibold mb-2">Upload Payment Confirmation Screenshot:</label>
-        <input id="screenshot" type="file" class="border rounded-lg p-2 w-full" accept="image/*" required />
-    </div>
-
-    <!-- Total Price Display -->
-    <div class="mb-4">
-        <h3 class="text-xl font-semibold text-center">Total Price: Ksh {totalPrice}</h3>
-    </div>
-
-    <!-- Submit Button -->
-    <div class="text-center">
-        <button class="bg-[#064b67] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#093445] transition duration-300"
-                on:click={handlePayment}>
-            Proceed to Pay
-        </button>
-    </div>
+<Navbar1/>
+<section class="bg-white dark:bg-gray-900">
+  <div class="py-8 lg:py-16 px-4 mx-auto max-w-screen-md">
+    <h2 class="mb-4 text-4xl tracking-tight font-extrabold text-center text-[#064b67] dark:text-white">Payment Form</h2>
+    <p class="mb-8 lg:mb-16 font-light text-center text-gray-500 dark:text-gray-400 sm:text-xl">
+      Got a technical issue? Want to send feedback about a beta feature? Need details about our Business plan? Let us know.
+    </p>
+    <form on:submit={handleSubmit} class="space-y-8">
+      <div>
+        <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">Your email</label>
+        <input 
+          type="email" 
+          id="email" 
+          bind:value={email}
+          class="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500 dark:shadow-sm-light" 
+          placeholder="name@example.com" 
+          required
+        />
+      </div>
+      <div>
+        <label for="number" class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">Mobile No.</label>
+        <input 
+          type="text" 
+          id="number" 
+          bind:value={number}
+          class="block p-3 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" 
+          placeholder="Your mobile number" 
+          required
+        />
+      </div>
+      <div class="sm:col-span-2">
+        <label for="file-upload" class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-400">Upload Proof of Payment</label>
+        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">Please upload an image or screenshot of your payment as proof.</p>
+        <input 
+          type="file" 
+          id="file-upload" 
+          accept="image/*" 
+          on:change={handleFileUpload}
+          class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+          required
+        />
+      </div>
+      <button type="submit" class="py-3 px-5 text-sm font-medium text-center text-white rounded-lg bg-[#064b67] sm:w-fit hover:bg-[#053b56] focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" disabled={isLoading}>
+        {#if isLoading}
+          <div class="loader"></div>
+        {:else}
+          Submit
+        {/if}
+      </button>
+    </form>
+    {#if statusMessage}
+      <div class="mt-4 text-center text-sm">{statusMessage}</div>
+    {/if}
+  </div>
 </section>
+<Footer/>
 
 <style>
-    /* Custom styles for the cards */
-    .card {
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s;
-    }
+  .loader {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 10px;
+  }
 
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 </style>

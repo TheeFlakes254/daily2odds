@@ -55,7 +55,6 @@
         window.location.href = '/login';
     };
 
-
     // Fetch user data on component mount
     onMount(() => {
         fetchUser();
@@ -65,8 +64,15 @@
 
 <nav class="flex items-center justify-between p-4 bg-white shadow-md">
     <div class="flex items-center">
-        <img src="/logo.png" alt="Logo" class="w-12 h-12 mr-2">
+        <a href="/homepage"> <!-- Wrap the logo with an anchor tag -->
+            <img src="/logo.png" alt="Logo" class="w-12 h-12 mr-2">
+        </a>
         <span class="text-blue-600 font-bold text-xl">Daily <span class="text-orange-600 text-4xl align-middle">2</span> Odds</span>
+    </div>
+
+    <!-- Center Section for 'Tips & Tricks' -->
+    <div class="text-center">
+        <a href="/tricks" class="text-gray-700 hover:text-[#064b67] font-semibold text-lg">Tips & Tricks</a>
     </div>
 
     <div class="relative flex items-center">
@@ -82,31 +88,29 @@
             </div>
         </button>
 
-{#if showNotificationsMenu}
-    <div class="absolute right-0 mt-20 w-64 bg-white rounded-lg shadow-lg z-10"> <!-- Increased mt value -->
-        <button on:click={closeNotificationsMenu} class="absolute top-2 right-2 bg-[#ffd700] rounded-full w-8 h-8 flex items-center justify-center shadow">
-            &times; <!-- Close button (X) -->
-        </button>
-        <div class="p-4">
-            <h3 class="font-bold text-lg mb-2 flex items-center justify-between">
-                <span>Notifications</span> <!-- Notification count -->
-            </h3>
-            <div class="flex flex-col space-y-2">
-                {#if notifications.length > 0}
-                    {#each notifications as message}
-                        <div class="bg-[#064b67] text-white p-3 rounded-md shadow">
-                            {message}
-                        </div>
-                    {/each}
-                {:else}
-                    <div class="px-4 py-2 text-gray-700">No notifications</div>
-                {/if}
+        {#if showNotificationsMenu}
+            <div class="absolute right-0 mt-20 w-64 bg-white rounded-lg shadow-lg z-10"> <!-- Increased mt value -->
+                <button on:click={closeNotificationsMenu} class="absolute top-2 right-2 bg-[#ffd700] rounded-full w-8 h-8 flex items-center justify-center shadow">
+                    &times; <!-- Close button (X) -->
+                </button>
+                <div class="p-4">
+                    <h3 class="font-bold text-lg mb-2 flex items-center justify-between">
+                        <span>Notifications</span> <!-- Notification count -->
+                    </h3>
+                    <div class="flex flex-col space-y-2">
+                        {#if notifications.length > 0}
+                            {#each notifications as message}
+                                <div class="bg-[#064b67] text-white p-3 rounded-md shadow">
+                                    {message}
+                                </div>
+                            {/each}
+                        {:else}
+                            <div class="px-4 py-2 text-gray-700">No notifications</div>
+                        {/if}
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-{/if}
-
-
+        {/if}
 
         {#if showProfileMenu}
             <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
