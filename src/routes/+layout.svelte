@@ -1,14 +1,18 @@
 <script>
-import { browser } from '$app/environment';
-import { onMount } from 'svelte';
-import { session } from '$lib/stores';
+  import { onMount } from 'svelte';
+  import { session } from '$lib/stores/session';
+  import { goto } from '$app/navigation';
 
-onMount(() => {
-  if (browser && localStorage.getItem('user')) {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    session.set({
-      // Your session data here
-    });
+  onMount(() => {
+    session.init();
+  });
+
+  function handleLogout() {
+    session.logout();
+    goto('/login');
   }
-});
 </script>
+
+<main>
+  <slot />
+</main>

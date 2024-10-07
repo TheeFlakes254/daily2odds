@@ -1,8 +1,8 @@
 <script>
     import Navbar from "$lib/components/navbar1.svelte";
-    import PocketBase from 'pocketbase';
     import Footer from "$lib/components/footer.svelte";
     import { onMount, onDestroy } from 'svelte';
+    import PocketBase from 'https://unpkg.com/pocketbase@0.20.1/dist/pocketbase.es.mjs';
 
     const pb = new PocketBase('https://odds.pockethost.io');
 
@@ -11,32 +11,19 @@
     let recentWins = [];
     let loadingWins = true;
     let items = [];
-    let userTier = 'free';  // Default to free tier
-    let itemLimit = 2;      // Default limit for free tier
+    let userTier = 'free';
+    let itemLimit = 2;
     let loading = true;
-    let userId = '';        // Store logged-in user's ID
-    let currentIndex = 0;   // New state for controlling the current index of the carousel
+    let userId = '';
+    let currentIndex = 0;
 
-    // Fetch user details including their tier
     async function fetchUserDetails() {
         try {
             const user = pb.authStore.model;
             userId = user?.id;
-            userTier = user?.tier || 'free';  // Assume there's a 'tier' field in the user model
+            userTier = user?.tier || 'free';
             
-            // Set item limit based on user's tier
-            switch (userTier) {
-                case 'silver':
-                    itemLimit = 4;
-                    break;
-                case 'gold':
-                    itemLimit = Infinity;  // No limit for gold tier
-                    break;
-                default:
-                    itemLimit = 2;  // Free tier gets 2 items
-                    break;
-            }
-
+            itemLimit = userTier === 'silver' ? 4 : userTier === 'gold' ? Infinity : 2;
         } catch (error) {
             console.error('Error fetching user details:', error);
         }
@@ -69,40 +56,19 @@
         }
     }
 
-    // Fetch odds items
     async function fetchAllItems() {
         try {
             loading = true;
             
-            let allItems = [];
-            let page = 1;
-            const perPage = 500;
+            const response = await pb.collection('Free_Tier').getList(1, itemLimit === Infinity ? 500 : itemLimit, {
+                sort: '-created',
+            });
             
-            while (true) {
-                const response = await pb.collection('Free_Tier').getList(page, perPage, {
-                    sort: '-created',
-                });
-                
-                const batchItems = response.items.map(item => ({
-                    id: item.id,
-                    image: item.image,
-                    description: item.description
-                }));
-                
-                allItems = [...allItems, ...batchItems];
-                
-                if (batchItems.length < perPage) {
-                    break;
-                }
-                page++;
-            }
-
-            // Apply the limit based on the user's tier
-            if (itemLimit !== Infinity) {
-                items = allItems.slice(0, itemLimit);
-            } else {
-                items = allItems;
-            }
+            items = response.items.map(item => ({
+                id: item.id,
+                image: item.image,
+                description: item.description
+            }));
 
         } catch (error) {
             console.error('Error in fetchAllItems:', error);
@@ -112,7 +78,6 @@
         }
     }
 
-    // Subscribe to real-time updates for odds
     function subscribeToOddsUpdates() {
         pb.collection('Free_Tier').subscribe('*', (e) => {
             console.log(e.action, e.record);
@@ -125,45 +90,42 @@
                         image: e.record.image,
                         description: e.record.description
                     };
-                } else {
-                    items.unshift({
+                } else if (items.length < itemLimit) {
+                    items = [{
                         id: e.record.id,
                         image: e.record.image,
                         description: e.record.description
-                    });
+                    }, ...items];
                 }
+                items = items; // Trigger reactivity
             } else if (e.action === 'delete') {
                 items = items.filter(item => item.id !== e.record.id);
             }
         });
     }
 
-    // Mounting and cleaning up subscriptions
     onMount(async () => {
         await fetchUserDetails();
         await Promise.all([fetchNews(), fetchRecentWins(), fetchAllItems()]);
         subscribeToOddsUpdates();
     });
 
-    // Clean up the subscription when component is destroyed
     onDestroy(() => {
         pb.collection('Free_Tier').unsubscribe('*');
     });
 
-    // New functions for carousel navigation
     const prevSlide = () => {
-        currentIndex = (currentIndex > 0) ? currentIndex - 1 : recentWins.length - 1; // Loop to the last item if at the beginning
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : recentWins.length - 1;
     };
 
     const nextSlide = () => {
-        currentIndex = (currentIndex < recentWins.length - 1) ? currentIndex + 1 : 0; // Loop to the first item if at the end
+        currentIndex = (currentIndex < recentWins.length - 1) ? currentIndex + 1 : 0;
     };
 </script>
 
 <Navbar />
 
-<!-- Recent Wins Section -->
-<section class="mb-8 flex flex-col items-center mt-4 ">
+<section class="mb-8 flex flex-col items-center mt-4">
     <h2 class="text-2xl font-bold mb-2 text-center">Recent Wins</h2>
     <div class="border-b-4 border-[#064b67] w-20 mb-4"></div>
 
@@ -174,30 +136,28 @@
             <p class="text-center text-gray-500">No recent wins available at the moment.</p>
         {:else}
             <div class="flex transition-transform duration-500" style="transform: translateX(-{currentIndex * 100}%);">
-                {#each recentWins as win}
+                {#each recentWins as win, index}
                     <div class="w-full flex-shrink-0">
-                        <img src={win.image} alt="Recent Win Image" class="w-full h-64 object-cover rounded-lg shadow-md">
+                        <img src={win.image} alt="Recent win {index + 1}" class="w-full h-64 object-cover rounded-lg shadow-md">
                     </div>
                 {/each}
             </div>
         {/if}
 
-        <!-- Navigation Buttons -->
-        {#if recentWins.length > 1} <!-- Show buttons only if there's more than one item -->
-            <button on:click={prevSlide} class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-lg p-2">
-                &lt; <!-- Left arrow for previous -->
+        {#if recentWins.length > 1}
+            <button on:click={prevSlide} class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-lg p-2" aria-label="Previous slide">
+                &lt;
             </button>
-            <button on:click={nextSlide} class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-lg p-2">
-                &gt; <!-- Right arrow for next -->
+            <button on:click={nextSlide} class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-lg p-2" aria-label="Next slide">
+                &gt;
             </button>
         {/if}
     </div>
 </section>
 
-<!-- Odds Section -->
 <section class="my-8 mx-4">
     <h2 class="text-2xl font-bold mb-4 text-center">Odds</h2>
-    <p class="text-center mb-4">Your current tier: {userTier} (Odds: {itemLimit === Infinity ? 'Unlimited' : itemLimit} )</p>
+    <p class="text-center mb-4">Your current tier: {userTier} (Odds: {itemLimit === Infinity ? 'Unlimited' : itemLimit})</p>
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {#if loading}
@@ -207,10 +167,10 @@
         {:else}
             {#each items as item}
                 <div class="bg-[#064b67] text-white p-6 rounded-lg shadow-md">
-                    {#if item.image} <!-- Check if image exists -->
-                        <img src={`https://odds.pockethost.io/api/files/Free_Tier/${item.id}/${item.image}`} alt="Item Image" class="w-full h-64 object-cover rounded-lg mb-4">
+                    {#if item.image}
+                        <img src={`https://odds.pockethost.io/api/files/Free_Tier/${item.id}/${item.image}`} alt="Odds item" class="w-full h-64 object-cover rounded-lg mb-4">
                     {:else}
-                        <p>No image available.</p> <!-- Handle missing images -->
+                        <p>No image available.</p>
                     {/if}
                     <p>{item.description}</p>
                 </div>
@@ -219,7 +179,6 @@
     </div>
 </section>
 
-<!-- Upgrade Button -->
 <div class="mt-6 text-center">
     <a href="/payment">
         <button class="bg-[#064b67] text-white font-bold py-3 px-6 rounded-full hover:bg-yellow-400 transition duration-300 focus:outline-none">
@@ -228,7 +187,6 @@
     </a>
 </div>
 
-<!-- News Section -->
 <section class="my-8 mx-4">
     <h2 class="text-2xl font-bold mb-4 text-center">Latest News</h2><br>
     
