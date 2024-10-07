@@ -12,6 +12,7 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
+
 	"dependencies": {
 		"pocketbase": "^0.21.5"
 	},
@@ -36,4 +37,5 @@
 		"vite": "^5.0.3"
 	},
 	"type": "module"
+
 }
