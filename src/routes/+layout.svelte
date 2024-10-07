@@ -1,17 +1,14 @@
 <script>
-    import { session } from '$lib/stores/session';
-    import '../app.css';
-    
-    // Check if running in the browser
-    if (typeof window !== 'undefined') {
-        $: if (localStorage.getItem('user')) {
-            const userData = JSON.parse(localStorage.getItem('user'));
-            session.set({
-                isLoggedIn: true,
-                user: userData
-            });
-        }
-    }
-</script>
+import { browser } from '$app/environment';
+import { onMount } from 'svelte';
+import { session } from '$lib/stores';
 
-<slot />
+onMount(() => {
+  if (browser && localStorage.getItem('user')) {
+    const userData = JSON.parse(localStorage.getItem('user'));
+    session.set({
+      // Your session data here
+    });
+  }
+});
+</script>
