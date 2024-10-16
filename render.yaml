@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: daily2odds
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.15.1
+    autoDeploy: true
+    rootDir: .  # This tells Render to use the root of your repository

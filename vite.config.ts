@@ -3,15 +3,12 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [sveltekit()],
+  server: {
+    fs: {
+      allow: ['.'], // This allows serving files from the entire project directory
+    },
+  },
   optimizeDeps: {
-    include: ['pocketbase']
-  },
-  build: {
-    rollupOptions: {
-      external: ['pocketbase']
-    }
-  },
-  ssr: {
-    noExternal: ['pocketbase']
+    exclude: ['your-problematic-module'] // Replace with the name of the module causing issues, if known
   }
 });
