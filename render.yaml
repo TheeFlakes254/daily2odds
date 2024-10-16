@@ -7,5 +7,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.15.1
+      - key: PORT
+        value: 10000
+    healthCheckPath: /health
     autoDeploy: true
-    rootDir: .  # This tells Render to use the root of your repository
