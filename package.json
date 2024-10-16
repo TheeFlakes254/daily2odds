@@ -10,33 +10,33 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node build/index.js", // This starts your app using Node.js after it's built
+    "start": "node build/index.js",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@sveltejs/adapter-node": "^1.3.1",  // Keep the stable version of the Node adapter
-    "@sveltejs/kit": "^1.27.3",  // SvelteKit version
-    "express": "^4.18.2",  // Express server, if you're using it
-    "pocketbase": "^0.21.5"  // PocketBase client for your app
+    "@sveltejs/adapter-node": "^1.3.1",
+    "@sveltejs/kit": "^1.27.3",
+    "express": "^4.18.2",
+    "pocketbase": "^0.21.5"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^2.4.6",  // Vite plugin for Svelte
-    "@typescript-eslint/eslint-plugin": "^6.9.1",  // ESLint for TypeScript
-    "@typescript-eslint/parser": "^6.9.1",  // ESLint parser for TypeScript
-    "autoprefixer": "^10.4.16",  // PostCSS Autoprefixer for Tailwind
-    "eslint": "^8.52.0",  // Linter
-    "eslint-config-prettier": "^9.0.0",  // ESLint config for Prettier
-    "eslint-plugin-svelte": "^2.34.1",  // ESLint plugin for Svelte
-    "postcss": "^8.4.31",  // PostCSS
-    "prettier": "^3.0.3",  // Code formatter
-    "prettier-plugin-svelte": "^3.0.3",  // Prettier plugin for Svelte
-    "svelte": "^4.2.2",  // Svelte core library
-    "svelte-check": "^3.5.2",  // Svelte type-checking tool
-    "tailwindcss": "^3.3.5",  // Tailwind CSS
-    "typescript": "^5.2.2",  // TypeScript
-    "vite": "^4.5.0"  // Vite build tool
+    "@sveltejs/vite-plugin-svelte": "^2.4.6",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.52.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-svelte": "^2.34.1",
+    "postcss": "^8.4.31",
+    "prettier": "^3.0.3",
+    "prettier-plugin-svelte": "^3.0.3",
+    "svelte": "^4.2.2",
+    "svelte-check": "^3.5.2",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0"
   }
 }
