@@ -201,7 +201,6 @@
             </div>
         {/if}
     </div>
-    <Footer />
 </div>
 
 <style>
