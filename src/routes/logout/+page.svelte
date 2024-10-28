@@ -1,5 +1,4 @@
 <script>
-    import { session } from '$lib/stores/session';
 
     // Clear session and localStorage, then redirect to login
     session.set({ isLoggedIn: false, user: null });
