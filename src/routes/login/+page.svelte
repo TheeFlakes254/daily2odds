@@ -1,42 +1,144 @@
+<!-- src/routes/login/+page.svelte -->
 <script>
     import PocketBase from 'pocketbase';
     import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
+    import { isAuthenticated, updateAuth } from '$lib/stores/auth';
 
     const pb = new PocketBase('https://odds.pockethost.io');
 
     let email = '';
     let password = '';
     let errorMessage = '';
-    let successMessage = '';
+    let showSuccessModal = false;
     let isLoading = false;
 
-    async function login(email, password) {
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        const token = await user.getIdToken();
+    onMount(() => {
+        // Check if user is already logged in
+        if (pb.authStore.isValid) {
+            goto('/homepage');
+        }
+    });
 
-        session.set({
-            user: user.email,
-            token: token
-        });
-    }
+    const validateForm = () => {
+        if (!email || !password) {
+            errorMessage = 'Please fill in all fields';
+            return false;
+        }
+        return true;
+    };
 
     const handleLogin = async () => {
+        if (!validateForm()) return;
+
         isLoading = true;
         errorMessage = '';
-        successMessage = '';
 
         try {
-            await pb.collection('user').authWithPassword(email, password);
-            successMessage = 'Login successful!';
-            goto('/homepage');
+            // Use 'user' instead of 'users' for collection name
+            const authData = await pb.collection('user').authWithPassword(
+                email,
+                password
+            );
+            
+            if (authData) {
+                updateAuth(true, authData.record);
+                showSuccessModal = true;
+                
+                // Clear form
+                email = '';
+                password = '';
+
+                // Redirect after a short delay
+                setTimeout(() => {
+                    goto('/homepage');
+                }, 2000);
+            }
         } catch (error) {
-            errorMessage = 'Wrong Credentials, Try again';
+            console.error('Login error:', error);
+            errorMessage = 'Invalid email or password. Please try again.';
         } finally {
             isLoading = false;
         }
     };
+
+    const closeModal = () => {
+        showSuccessModal = false;
+    };
 </script>
+
+<!-- Rest of your template remains the same -->
+<div class="page-container bg-white">
+    <div class="login-form bg-[#064b67] p-6 rounded-lg shadow-lg relative">
+        <h2 class="text-white text-2xl font-bold mb-6 text-center">Welcome Back</h2>
+
+        {#if isLoading}
+            <div class="absolute top-4 right-4">
+                <div class="loader"></div>
+            </div>
+        {/if}
+
+        {#if errorMessage}
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
+                <p>{errorMessage}</p>
+            </div>
+        {/if}
+
+        <form on:submit|preventDefault={handleLogin} class="space-y-6">
+            <div class="space-y-1">
+                <input
+                    type="email"
+                    bind:value={email}
+                    class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all"
+                    placeholder="Email"
+                    required
+                />
+            </div>
+
+            <div class="space-y-1">
+                <input
+                    type="password"
+                    bind:value={password}
+                    class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all"
+                    placeholder="Password"
+                    required
+                />
+            </div>
+
+            <button
+                type="submit"
+                class="w-full bg-[#ffd700] text-teal-900 font-bold px-6 py-3 rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors disabled:opacity-50"
+                disabled={isLoading}
+            >
+                {isLoading ? 'Logging in...' : 'Login'}
+            </button>
+        </form>
+
+        <p class="text-center text-white mt-6">
+            Don't have an account? 
+            <a href="/signup" class="text-yellow-400 hover:underline ml-1">
+                Sign Up
+            </a>
+        </p>
+    </div>
+</div>
+
+{#if showSuccessModal}
+    <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm mx-4">
+            <h3 class="text-lg font-bold text-center mb-2">Login Successful!</h3>
+            <p class="text-center text-gray-600">Welcome back! Redirecting you...</p>
+            <div class="mt-4 flex justify-center">
+                <button
+                    class="bg-[#064b67] text-white px-6 py-2 rounded-md hover:bg-[#053a51] transition-colors"
+                    on:click={closeModal}
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     @keyframes spin {
@@ -53,65 +155,29 @@
         animation: spin 1s linear infinite;
     }
 
+    :global(body), :global(html) {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .page-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
+    .login-form {
+        width: 100%;
+        max-width: 24rem;
+    }
+
     @media (max-width: 640px) {
-        .login-container {
-            padding: 1rem;
-        }
         .login-form {
-            width: 100%;
-            max-width: none;
+            padding: 1.5rem;
         }
     }
 </style>
-
-<div class="flex justify-center items-center min-h-screen bg-white login-container">
-    <div class="bg-[#064b67] p-4 sm:p-8 rounded-lg shadow-md w-full max-w-sm sm:max-w-md md:max-w-lg lg:w-96 relative login-form">
-        <h2 class="text-white text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Login</h2>
-
-        {#if isLoading}
-            <div class="absolute top-2 right-2 sm:top-4 sm:right-4">
-                <div class="loader"></div>
-            </div>
-        {/if}
-
-        {#if successMessage}
-            <p class="text-green-400 mb-4">{successMessage}</p>
-        {/if}
-
-        {#if errorMessage}
-            <p class="text-red-400 mb-4">{errorMessage}</p>
-        {/if}
-
-        <div class="mb-4">
-            <input
-                type="email"
-                bind:value={email}
-                class="w-full px-3 py-2 bg-transparent border-b-2 text-white focus:outline-none focus:border-b-4 text-sm sm:text-base"
-                placeholder="Email"
-                required
-            />
-        </div>
-
-        <div class="mb-6">
-            <input
-                type="password"
-                bind:value={password}
-                class="w-full px-3 py-2 bg-transparent border-b-2 text-white focus:outline-none focus:border-b-4 text-sm sm:text-base"
-                placeholder="Password"
-                required
-            />
-        </div>
-
-        <button
-            class="mx-auto flex justify-center items-center bg-[#ffd700] text-teal-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full text-sm sm:text-base"
-            on:click={handleLogin}
-            disabled={isLoading}
-        >
-            Login
-        </button>
-
-        <p class="text-center text-white mt-4 text-sm sm:text-base">
-            Don't have an account? <a href="/signup" class="hover:underline">Sign Up</a>
-        </p>
-    </div>
-</div>

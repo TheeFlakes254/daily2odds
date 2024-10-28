@@ -1,9 +1,22 @@
 <!-- src/lib/components/Navbar.svelte -->
 <script>
+    import PocketBase from 'pocketbase';
+    import { goto } from '$app/navigation';
+    import { isAuthenticated, updateAuth } from '$lib/stores/auth';
+
+    const pb = new PocketBase('https://odds.pockethost.io');
+    
     let isMenuOpen = false;
 
     const toggleMenu = () => {
         isMenuOpen = !isMenuOpen;
+    };
+
+    const handleLogout = async () => {
+        pb.authStore.clear();
+        updateAuth(false, null);
+        isMenuOpen = false; // Close mobile menu if open
+        goto('/login');
     };
 </script>
 
@@ -33,13 +46,24 @@
         </li>
     </ul>
 
-    <!-- Desktop Login Button -->
-    <a 
-        href="/login" 
-        class="hidden md:block bg-[#064b67] text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 transition duration-300"
-    >
-        Login
-    </a>
+    <!-- Desktop Authentication Buttons -->
+    <div class="hidden md:flex items-center space-x-4">
+        {#if $isAuthenticated}
+            <button
+                on:click={handleLogout}
+                class="bg-red-600 text-white px-4 py-2 rounded-md font-bold hover:bg-red-700 transition duration-300"
+            >
+                Logout
+            </button>
+        {:else}
+            <a
+                href="/login"
+                class="bg-[#064b67] text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 transition duration-300"
+            >
+                Login
+            </a>
+        {/if}
+    </div>
 
     <!-- Mobile Hamburger Button -->
     <button 
@@ -114,15 +138,26 @@
                         FAQ
                     </a>
                 </li>
-                <li>
-                    <a 
-                        href="/login" 
-                        class="inline-block bg-[#064b67] text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 transition duration-300"
-                        on:click={toggleMenu}
-                    >
-                        Login
-                    </a>
-                </li>
+                {#if $isAuthenticated}
+                    <li>
+                        <button
+                            on:click={handleLogout}
+                            class="inline-block w-full bg-red-600 text-white px-4 py-2 rounded-md font-bold hover:bg-red-700 transition duration-300"
+                        >
+                            Logout
+                        </button>
+                    </li>
+                {:else}
+                    <li>
+                        <a 
+                            href="/login" 
+                            class="inline-block w-full bg-[#064b67] text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 transition duration-300"
+                            on:click={toggleMenu}
+                        >
+                            Login
+                        </a>
+                    </li>
+                {/if}
             </ul>
         </div>
     {/if}
