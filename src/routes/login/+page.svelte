@@ -1,7 +1,6 @@
 <script>
     import PocketBase from 'pocketbase';
     import { goto } from '$app/navigation';
-    import { session } from '$lib/stores/session';
 
     const pb = new PocketBase('https://odds.pockethost.io');
 

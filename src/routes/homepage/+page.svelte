@@ -1,8 +1,11 @@
 <script>
-    import Navbar from "$lib/components/navbar1.svelte";
+    
+    
     import Footer from "$lib/components/footer.svelte";
-    import { onMount, onDestroy } from 'svelte';
-    import PocketBase from 'https://unpkg.com/pocketbase@0.20.1/dist/pocketbase.es.mjs';
+    import { onMount, onDestroy } from 'svelte';  // This is the only PocketBase import you need
+    import PocketBase from 'pocketbase'; // This is the correct import, assuming you've installed pocketbase via npm or yarn
+
+
 
     const pb = new PocketBase('https://odds.pockethost.io');
 
@@ -123,7 +126,7 @@
     };
 </script>
 
-<Navbar />
+
 
 <section class="mb-8 flex flex-col items-center mt-4">
     <h2 class="text-2xl font-bold mb-2 text-center">Recent Wins</h2>

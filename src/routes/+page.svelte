@@ -10,13 +10,13 @@
 
 </script>
 
-<Navbar/>
+
 <Heropage/>
 <Tips/>
 <Aboutus/>
 <FAQ/>
 <Contact/>
-<Footer/>
+
 
 <style>
 

@@ -1,18 +1,22 @@
 <script>
-  import { onMount } from 'svelte';
-  import { session } from '$lib/stores/session';
-  import { goto } from '$app/navigation';
-
-  onMount(() => {
-    session.init();
-  });
-
-  function handleLogout() {
-    session.logout();
-    goto('/login');
-  }
+  import "../app.css";  // Import your global styles
+  import Navbar from "$lib/components/navbar.svelte";
 </script>
 
-<main>
-  <slot />
-</main>
+<div class="min-h-screen bg-gray-50">
+  <Navbar />
+  <main class="container mx-auto px-4 py-8">
+    <slot />
+  </main>
+  <footer class="mt-auto py-4 text-center text-gray-600">
+    <p>© {new Date().getFullYear()} Daily 2 Odds. All rights reserved.</p>
+  </footer>
+</div>
+
+<style>
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+</style>
