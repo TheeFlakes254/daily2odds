@@ -2,12 +2,12 @@ services:
   - type: web
     name: daily2odds
     env: node
+    plan: free
     buildCommand: npm install && npm run build
-    startCommand: node build/index.js
+    startCommand: node build
     envVars:
       - key: NODE_VERSION
-        value: 18.18.0
+        value: 18
       - key: PORT
         value: 3000
-    healthCheckPath: /health
-    autoDeploy: true
+    healthCheckPath: /
