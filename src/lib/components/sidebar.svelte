@@ -1,7 +1,8 @@
+<!-- src/lib/components/Sidebar.svelte -->
 <script>
     import { onMount } from 'svelte';
     import PocketBase from 'pocketbase';
-
+    
     const pb = new PocketBase('https://odds.pockethost.io');
 
     export let isSidebarOpen = false;
@@ -15,57 +16,54 @@
     let activeMenuItem = 'home';
     let notifications = 3;
     let userMenuOpen = false;
+    let isDragging = false;
+    let startX = 0;
+    let currentX = 0;
+    let sidebarWidth = 280;
     
     // Touch handling variables
     let touchStartX = 0;
     let touchEndX = 0;
     let minSwipeDistance = 50;
 
-    // Handle touch start
-    function handleTouchStart(event) {
-        touchStartX = event.touches[0].clientX;
+    // Handle drag start
+    function handleDragStart(event) {
+        isDragging = true;
+        startX = event.type === 'touchstart' ? event.touches[0].clientX : event.clientX;
+        currentX = startX;
+        document.body.style.userSelect = 'none';
     }
 
-    // Handle touch move
-    function handleTouchMove(event) {
-        touchEndX = event.touches[0].clientX;
-    }
-
-    // Handle touch end
-    function handleTouchEnd() {
-        const swipeDistance = touchEndX - touchStartX;
+    // Handle drag movement
+    function handleDrag(event) {
+        if (!isDragging) return;
         
-        if (swipeDistance > minSwipeDistance && !isSidebarOpen) {
-            toggleSidebar();
+        const clientX = event.type === 'touchmove' ? event.touches[0].clientX : event.clientX;
+        const deltaX = clientX - startX;
+        
+        // If sidebar is closed, only allow opening from right to left
+        if (!isSidebarOpen && deltaX < 0) {
+            currentX = clientX;
+            if (Math.abs(deltaX) > minSwipeDistance) {
+                toggleSidebar();
+                isDragging = false;
+            }
         }
-        else if (swipeDistance < -minSwipeDistance && isSidebarOpen) {
-            toggleSidebar();
+        // If sidebar is open, only allow closing from left to right
+        else if (isSidebarOpen && deltaX > 0) {
+            currentX = clientX;
+            if (deltaX > minSwipeDistance) {
+                toggleSidebar();
+                isDragging = false;
+            }
         }
-
-        touchStartX = 0;
-        touchEndX = 0;
     }
 
-    // Close sidebar function
-    const closeSidebar = () => {
-        if (isSidebarOpen) {
-            toggleSidebar();
-        }
-    };
-
-    // Toggle user menu
-    const toggleUserMenu = () => {
-        userMenuOpen = !userMenuOpen;
-    };
-
-    // Set active menu item
-    const setActiveMenuItem = (item) => {
-        activeMenuItem = item;
-        // Close sidebar on menu item click in mobile view
-        if (window.innerWidth < 768) {
-            closeSidebar();
-        }
-    };
+    // Handle drag end
+    function handleDragEnd() {
+        isDragging = false;
+        document.body.style.userSelect = '';
+    }
 
     // Fetch user details
     async function fetchUserDetails() {
@@ -80,49 +78,70 @@
         }
     }
 
+    // Set active menu item
+    const setActiveMenuItem = (item) => {
+        activeMenuItem = item;
+        // Close sidebar on menu item click in mobile view
+        if (window.innerWidth < 768) {
+            closeSidebar();
+        }
+    };
+
     onMount(async () => {
         await fetchUserDetails();
+        
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('mouseup', handleDragEnd);
+        document.addEventListener('touchmove', handleDrag, { passive: true });
+        document.addEventListener('touchend', handleDragEnd);
+
+        return () => {
+            document.removeEventListener('mousemove', handleDrag);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchmove', handleDrag);
+            document.removeEventListener('touchend', handleDragEnd);
+        };
     });
 </script>
 
+<!-- Drag Handle -->
+<div
+    class="md:hidden fixed top-1/2 right-0 transform -translate-y-1/2 z-50 {isSidebarOpen ? 'translate-x-[280px]' : ''} transition-transform duration-300"
+    on:mousedown={handleDragStart}
+    on:touchstart={handleDragStart}
+>
+    <div class="bg-[#064b67] text-white p-2 rounded-l-lg shadow-lg cursor-grab active:cursor-grabbing">
+        <svg 
+            class="w-6 h-12 transform {isSidebarOpen ? 'rotate-180' : ''} transition-transform duration-300" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+        >
+            <path 
+                stroke-linecap="round" 
+                stroke-linejoin="round" 
+                stroke-width="2" 
+                d="M9 5l7 7-7 7"
+            />
+        </svg>
+    </div>
+</div>
+
+<!-- Sidebar Overlay -->
 <div 
     class="md:hidden fixed inset-0 bg-black/50 z-20 transition-opacity duration-200 {isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}" 
-    on:click={closeSidebar}
-    on:touchstart={handleTouchStart}
-    on:touchmove={handleTouchMove}
-    on:touchend={handleTouchEnd}
+    on:click={toggleSidebar}
 ></div>
 
-<!-- Hamburger Menu Button for Mobile -->
-<button 
-    class="md:hidden fixed top-4 left-4 z-50 p-2 bg-[#064b67] text-white rounded-lg shadow-lg {isSidebarOpen ? 'hidden' : ''}"
-    on:click={toggleSidebar}
->
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-</button>
-
+<!-- Sidebar Content -->
 <aside 
-    class="fixed md:sticky top-4 left-4 w-[280px] h-[calc(100vh-2rem)] bg-[#064b67] text-white transform {isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out z-30 flex flex-col rounded-3xl overflow-hidden shadow-xl md:mx-4"
-    on:touchstart={handleTouchStart}
-    on:touchmove={handleTouchMove}
-    on:touchend={handleTouchEnd}
+    class="fixed md:sticky top-0 left-0 w-[280px] h-screen bg-[#064b67] text-white transform {isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col overflow-hidden md:top-4 md:left-4 md:h-[calc(100vh-2rem)] md:rounded-3xl md:mx-4"
 >
     <div class="flex flex-col h-full overflow-hidden">
-        <!-- Sidebar Header with User Profile -->
+        <!-- Sidebar Header -->
         <div class="p-4 border-b border-blue-600/50">
             <div class="flex items-center justify-between mb-2">
                 <h1 class="text-lg font-medium truncate">{userEmail}</h1>
-                <button 
-                    class="md:hidden p-2 hover:bg-blue-600/50 rounded-lg transition-colors" 
-                    on:click={closeSidebar}
-                    aria-label="Close sidebar"
-                >
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
             </div>
             <div class="flex items-center justify-between bg-blue-600/50 rounded-lg p-2 mt-2">
                 <span class="text-sm font-medium">{userTier.toUpperCase()} TIER</span>
@@ -132,9 +151,8 @@
             </div>
         </div>
         
-        <!-- Navigation Menu -->
+        <!-- Navigation -->
         <nav class="flex-1 overflow-y-auto py-4">
-            <!-- Primary Navigation -->
             <div class="space-y-1 px-3">
                 <a 
                     href="/" 
@@ -189,7 +207,7 @@
                 </a>
             </div>
 
-            <!-- Account Management -->
+            <!-- Account Section -->
             <div class="mt-4 pt-4 border-t border-blue-600/50">
                 <h4 class="px-7 text-xs font-semibold uppercase text-white/70 mb-2">Account</h4>
                 <div class="space-y-1 px-3">
@@ -229,7 +247,7 @@
             </div>
         </nav>
 
-        <!-- Premium Upgrade Banner -->
+        <!-- Premium Banner -->
         {#if userTier !== 'gold'}
             <div class="p-4 border-t border-blue-600/50">
                 <div class="bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl p-4 text-[#064b67]">
@@ -281,16 +299,43 @@
         background: rgba(255, 255, 255, 0.3);
     }
 
+    /* Handle styling */
+    .cursor-grab {
+        cursor: grab;
+    }
+
+    .cursor-grabbing {
+        cursor: grabbing;
+    }
+
+    /* Improve touch handling */
+    @media (hover: none) {
+        .cursor-grab {
+            cursor: default;
+        }
+    }
+
+    /* Prevent text selection during drag */
+    .user-select-none {
+        user-select: none;
+    }
+
+    /* Smooth transitions */
+    .transition-transform {
+        transition-property: transform;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 300ms;
+    }
+
     /* Mobile optimizations */
     @media (max-width: 768px) {
         aside {
+            width: 280px;
             top: 0;
             left: 0;
             border-radius: 0;
             height: 100vh;
             margin: 0;
-            width: 85%;
-            max-width: 280px;
         }
         
         /* Ensure smooth transition for sidebar */
@@ -300,18 +345,21 @@
         }
     }
 
-    /* Hover animations */
-    a, button {
-        transition: all 0.2s ease;
+    /* Active menu item indicator */
+    .bg-blue-500 {
+        position: relative;
     }
 
-    a:active, button:active {
-        transform: scale(0.98);
-    }
-
-    /* Close button hover effect */
-    button.hover\:bg-blue-600\/50:hover {
-        background-color: rgba(37, 99, 235, 0.5);
+    .bg-blue-500::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 70%;
+        background: white;
+        border-radius: 0 2px 2px 0;
     }
 
     /* Gradient animations */
@@ -332,21 +380,25 @@
         }
     }
 
-    /* Active menu item highlight */
-    .bg-blue-500 {
-        position: relative;
+    /* Hover animations */
+    @media (hover: hover) {
+        a:hover, button:hover {
+            transform: translateX(4px);
+        }
     }
 
-    .bg-blue-500::before {
-        content: '';
-        position: absolute;
-        left: -8px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 4px;
-        height: 70%;
-        background: white;
-        border-radius: 0 2px 2px 0;
+    /* Touch device optimizations */
+    @media (hover: none) {
+        a:active, button:active {
+            transform: scale(0.98);
+        }
+    }
+
+    /* Performance optimizations */
+    .transform {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        will-change: transform;
     }
 
     /* Ensure overlay click works properly */
@@ -354,10 +406,16 @@
         pointer-events: none;
     }
 
-    /* Improved touch handling for mobile */
-    @media (hover: none) {
-        a:hover, button:hover {
-            transform: none;
+    /* Improve tap targets on mobile */
+    @media (max-width: 768px) {
+        a, button {
+            min-height: 44px;
         }
+    }
+
+    /* Ensure content is visible during transitions */
+    .overflow-hidden {
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
 </style>

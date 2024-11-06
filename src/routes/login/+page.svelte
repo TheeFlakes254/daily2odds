@@ -10,11 +10,10 @@
     let email = '';
     let password = '';
     let errorMessage = '';
-    let showSuccessModal = false;
+    let successMessage = '';
     let isLoading = false;
 
     onMount(() => {
-        // Check if user is already logged in
         if (pb.authStore.isValid) {
             goto('/homepage');
         }
@@ -33,9 +32,9 @@
 
         isLoading = true;
         errorMessage = '';
+        successMessage = '';
 
         try {
-            // Use 'user' instead of 'users' for collection name
             const authData = await pb.collection('user').authWithPassword(
                 email,
                 password
@@ -43,13 +42,11 @@
             
             if (authData) {
                 updateAuth(true, authData.record);
-                showSuccessModal = true;
+                successMessage = 'Login successful! Redirecting...';
                 
-                // Clear form
                 email = '';
                 password = '';
 
-                // Redirect after a short delay
                 setTimeout(() => {
                     goto('/homepage');
                 }, 2000);
@@ -61,84 +58,70 @@
             isLoading = false;
         }
     };
-
-    const closeModal = () => {
-        showSuccessModal = false;
-    };
 </script>
 
-<!-- Rest of your template remains the same -->
-<div class="page-container bg-white">
-    <div class="login-form bg-[#064b67] p-6 rounded-lg shadow-lg relative">
-        <h2 class="text-white text-2xl font-bold mb-6 text-center">Welcome Back</h2>
+<div class="min-h-screen w-full bg-white flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+    <div class="w-full max-w-sm sm:max-w-md">
+        <div class="bg-[#064b67] rounded-lg shadow-xl p-6 sm:p-8 relative">
+            <h2 class="text-white text-xl sm:text-2xl font-bold mb-6 text-center">Welcome Back</h2>
 
-        {#if isLoading}
-            <div class="absolute top-4 right-4">
-                <div class="loader"></div>
-            </div>
-        {/if}
+            {#if isLoading}
+                <div class="absolute top-4 right-4">
+                    <div class="loader"></div>
+                </div>
+            {/if}
 
-        {#if errorMessage}
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
-                <p>{errorMessage}</p>
-            </div>
-        {/if}
+            <form on:submit|preventDefault={handleLogin} class="space-y-6">
+                <div class="space-y-2">
+                    <input
+                        type="email"
+                        bind:value={email}
+                        class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all text-base sm:text-lg"
+                        placeholder="Email"
+                        required
+                    />
+                </div>
 
-        <form on:submit|preventDefault={handleLogin} class="space-y-6">
-            <div class="space-y-1">
-                <input
-                    type="email"
-                    bind:value={email}
-                    class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all"
-                    placeholder="Email"
-                    required
-                />
-            </div>
+                <div class="space-y-2">
+                    <input
+                        type="password"
+                        bind:value={password}
+                        class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all text-base sm:text-lg"
+                        placeholder="Password"
+                        required
+                    />
+                </div>
 
-            <div class="space-y-1">
-                <input
-                    type="password"
-                    bind:value={password}
-                    class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all"
-                    placeholder="Password"
-                    required
-                />
-            </div>
-
-            <button
-                type="submit"
-                class="w-full bg-[#ffd700] text-teal-900 font-bold px-6 py-3 rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors disabled:opacity-50"
-                disabled={isLoading}
-            >
-                {isLoading ? 'Logging in...' : 'Login'}
-            </button>
-        </form>
-
-        <p class="text-center text-white mt-6">
-            Don't have an account? 
-            <a href="/signup" class="text-yellow-400 hover:underline ml-1">
-                Sign Up
-            </a>
-        </p>
-    </div>
-</div>
-
-{#if showSuccessModal}
-    <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm mx-4">
-            <h3 class="text-lg font-bold text-center mb-2">Login Successful!</h3>
-            <p class="text-center text-gray-600">Welcome back! Redirecting you...</p>
-            <div class="mt-4 flex justify-center">
                 <button
-                    class="bg-[#064b67] text-white px-6 py-2 rounded-md hover:bg-[#053a51] transition-colors"
-                    on:click={closeModal}
+                    type="submit"
+                    class="w-full bg-[#ffd700] text-teal-900 font-bold px-6 py-3 rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors disabled:opacity-50 text-base sm:text-lg"
+                    disabled={isLoading}
                 >
-                    Close
+                    {isLoading ? 'Logging in...' : 'Login'}
                 </button>
-            </div>
+
+                {#if errorMessage}
+                    <div class="text-red-400 text-sm sm:text-base text-center mt-2">
+                        {errorMessage}
+                    </div>
+                {/if}
+
+                {#if successMessage}
+                    <div class="text-green-400 text-sm sm:text-base text-center mt-2">
+                        {successMessage}
+                    </div>
+                {/if}
+            </form>
+
+            <p class="text-center text-white mt-6 text-sm sm:text-base">
+                Don't have an account? 
+                <a href="/signup" class="text-yellow-400 hover:underline ml-1">
+                    Sign Up
+                </a>
+            </p>
         </div>
     </div>
-{/if}
+</div>
 
 <style>
     @keyframes spin {
@@ -147,12 +130,20 @@
     }
 
     .loader {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #ffd700;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #ffd700;
         border-radius: 50%;
-        width: 30px;
-        height: 30px;
+        width: 24px;
+        height: 24px;
         animation: spin 1s linear infinite;
+    }
+
+    @media (min-width: 640px) {
+        .loader {
+            border-width: 4px;
+            width: 30px;
+            height: 30px;
+        }
     }
 
     :global(body), :global(html) {
@@ -161,23 +152,15 @@
         padding: 0;
     }
 
-    .page-container {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        box-sizing: border-box;
+    input::placeholder {
+        opacity: 0.7;
     }
 
-    .login-form {
-        width: 100%;
-        max-width: 24rem;
-    }
-
-    @media (max-width: 640px) {
-        .login-form {
-            padding: 1.5rem;
-        }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-text-fill-color: white;
+        -webkit-box-shadow: 0 0 0px 1000px #064b67 inset;
+        transition: background-color 5000s ease-in-out 0s;
     }
 </style>
