@@ -15,56 +15,7 @@
     let userEmail = '';
     let activeMenuItem = 'home';
     let notifications = 3;
-    let userMenuOpen = false;
-    let isDragging = false;
-    let startX = 0;
-    let currentX = 0;
-    let sidebarWidth = 280;
     
-    // Touch handling variables
-    let touchStartX = 0;
-    let touchEndX = 0;
-    let minSwipeDistance = 50;
-
-    // Handle drag start
-    function handleDragStart(event) {
-        isDragging = true;
-        startX = event.type === 'touchstart' ? event.touches[0].clientX : event.clientX;
-        currentX = startX;
-        document.body.style.userSelect = 'none';
-    }
-
-    // Handle drag movement
-    function handleDrag(event) {
-        if (!isDragging) return;
-        
-        const clientX = event.type === 'touchmove' ? event.touches[0].clientX : event.clientX;
-        const deltaX = clientX - startX;
-        
-        // If sidebar is closed, only allow opening from right to left
-        if (!isSidebarOpen && deltaX < 0) {
-            currentX = clientX;
-            if (Math.abs(deltaX) > minSwipeDistance) {
-                toggleSidebar();
-                isDragging = false;
-            }
-        }
-        // If sidebar is open, only allow closing from left to right
-        else if (isSidebarOpen && deltaX > 0) {
-            currentX = clientX;
-            if (deltaX > minSwipeDistance) {
-                toggleSidebar();
-                isDragging = false;
-            }
-        }
-    }
-
-    // Handle drag end
-    function handleDragEnd() {
-        isDragging = false;
-        document.body.style.userSelect = '';
-    }
-
     // Fetch user details
     async function fetchUserDetails() {
         try {
@@ -83,49 +34,39 @@
         activeMenuItem = item;
         // Close sidebar on menu item click in mobile view
         if (window.innerWidth < 768) {
-            closeSidebar();
+            isSidebarOpen = false;
         }
     };
 
     onMount(async () => {
         await fetchUserDetails();
-        
-        document.addEventListener('mousemove', handleDrag);
-        document.addEventListener('mouseup', handleDragEnd);
-        document.addEventListener('touchmove', handleDrag, { passive: true });
-        document.addEventListener('touchend', handleDragEnd);
-
-        return () => {
-            document.removeEventListener('mousemove', handleDrag);
-            document.removeEventListener('mouseup', handleDragEnd);
-            document.removeEventListener('touchmove', handleDrag);
-            document.removeEventListener('touchend', handleDragEnd);
-        };
     });
 </script>
 
-<!-- Drag Handle -->
-<div
-    class="md:hidden fixed top-1/2 right-0 transform -translate-y-1/2 z-50 {isSidebarOpen ? 'translate-x-[280px]' : ''} transition-transform duration-300"
-    on:mousedown={handleDragStart}
-    on:touchstart={handleDragStart}
+<!-- Soccer Ball Toggle Button -->
+<button
+    class="fixed left-4 top-1/2 -translate-y-1/2 z-50 md:hidden bg-white rounded-full p-2 shadow-lg cursor-pointer transform hover:scale-110 transition-all duration-300"
+    class:rotate-ball={isSidebarOpen}
+    on:click={toggleSidebar}
+    aria-label="Toggle Sidebar"
 >
-    <div class="bg-[#064b67] text-white p-2 rounded-l-lg shadow-lg cursor-grab active:cursor-grabbing">
-        <svg 
-            class="w-6 h-12 transform {isSidebarOpen ? 'rotate-180' : ''} transition-transform duration-300" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-        >
-            <path 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                stroke-width="2" 
-                d="M9 5l7 7-7 7"
-            />
-        </svg>
-    </div>
-</div>
+    <svg 
+        class="w-8 h-8" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+    >
+        <circle cx="12" cy="12" r="11" fill="#2D2D2D" stroke="white" stroke-width="2"/>
+        <path 
+            d="M12 3L15.5 7H8.5L12 3Z M3 12L7 8.5V15.5L3 12Z M21 12L17 15.5V8.5L21 12Z M12 21L8.5 17H15.5L12 21Z" 
+            fill="white"
+        />
+        <path 
+            d="M12 7L15 12L12 17L9 12L12 7Z" 
+            fill="white"
+        />
+    </svg>
+</button>
 
 <!-- Sidebar Overlay -->
 <div 
@@ -280,6 +221,30 @@
 </aside>
 
 <style>
+    /* Rotating soccer ball animation */
+    .rotate-ball {
+        animation: rotateBall 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes rotateBall {
+        from {
+            transform: translateY(-50%) rotate(0deg);
+        }
+        to {
+            transform: translateY(-50%) rotate(360deg);
+        }
+    }
+
+    /* Hover effect for soccer ball */
+    button:hover svg {
+        filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+    }
+
+    /* Soccer ball bounce animation on click */
+    button:active {
+        transform: translateY(-50%) scale(0.95);
+    }
+
     /* Scrollbar styling */
     nav::-webkit-scrollbar {
         width: 4px;
@@ -299,34 +264,7 @@
         background: rgba(255, 255, 255, 0.3);
     }
 
-    /* Handle styling */
-    .cursor-grab {
-        cursor: grab;
-    }
-
-    .cursor-grabbing {
-        cursor: grabbing;
-    }
-
-    /* Improve touch handling */
-    @media (hover: none) {
-        .cursor-grab {
-            cursor: default;
-        }
-    }
-
-    /* Prevent text selection during drag */
-    .user-select-none {
-        user-select: none;
-    }
-
-    /* Smooth transitions */
-    .transition-transform {
-        transition-property: transform;
-        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        transition-duration: 300ms;
-    }
-
+    /* Mobile optimizations */
     /* Mobile optimizations */
     @media (max-width: 768px) {
         aside {

@@ -3,7 +3,7 @@
     import PocketBase from 'pocketbase';
     import { goto } from '$app/navigation';
     import { isAuthenticated, updateAuth } from '$lib/stores/auth';
-    import { onMount, beforeUpdate } from 'svelte';
+    import { onMount } from 'svelte';
     import { fade, fly } from 'svelte/transition';
     import { page } from '$app/stores';
 
@@ -13,7 +13,7 @@
     let prevScrollY = 0;
     let isNavVisible = true;
     let hasScrolled = false;
-    let activeDropdown = false;
+    let isMobileMenuOpen = false;
     let userProfile = null;
 
     onMount(async () => {
@@ -39,7 +39,7 @@
     });
 
     const handleNavigation = async (route) => {
-        activeDropdown = false;
+        isMobileMenuOpen = false;
         try {
             await goto(route);
         } catch (error) {
@@ -57,24 +57,12 @@
         }
     };
 
-    const toggleDropdown = () => {
-        activeDropdown = !activeDropdown;
-    };
-
-    const handleClickOutside = (event) => {
-        const dropdown = document.querySelector('.user-dropdown');
-        const userButton = document.querySelector('.user-button');
-        
-        if (activeDropdown && dropdown && !dropdown.contains(event.target) && 
-            userButton && !userButton.contains(event.target)) {
-            activeDropdown = false;
-        }
+    const toggleMobileMenu = () => {
+        isMobileMenuOpen = !isMobileMenuOpen;
     };
 
     $: isActive = (path) => $page.url.pathname === path;
 </script>
-
-<svelte:window on:click={handleClickOutside} />
 
 <nav
     class="fixed w-full z-50 transition-all duration-300 ease-in-out {isNavVisible ? 'top-0' : '-top-full'} 
@@ -85,67 +73,29 @@
             {#if $isAuthenticated}
                 <!-- Logged in state -->
                 <div class="w-full flex items-center justify-between">
-                    <!-- Desktop Logo -->
+                    <!-- Logo (left-aligned on desktop, centered on mobile) -->
                     <div 
-                        class="hidden md:flex items-center cursor-pointer transform hover:scale-105 transition-transform duration-200" 
+                        class="flex items-center cursor-pointer transform hover:scale-105 transition-transform duration-200 {!$isAuthenticated ? 'md:ml-0' : ''}" 
+                        class:mx-auto={$isAuthenticated && window.innerWidth < 768}
                         on:click={() => handleNavigation('/')}
                     >
                         <img src="/logo.png" alt="Logo" class="w-12 h-12 mr-2">
                         <span class="text-blue-600 font-bold text-xl">Daily <span class="text-orange-600 text-4xl align-middle">2</span> Odds</span>
                     </div>
 
-                    <!-- Mobile Centered Logo -->
-                    <div class="md:hidden w-full absolute left-0 flex justify-center">
-                        <div 
-                            class="flex items-center cursor-pointer transform hover:scale-105 transition-transform duration-200" 
-                            on:click={() => handleNavigation('/')}
-                        >
-                            <img src="/logo.png" alt="Logo" class="w-12 h-12 mr-2">
-                            <span class="text-blue-600 font-bold text-xl">Daily <span class="text-orange-600 text-4xl align-middle">2</span> Odds</span>
-                        </div>
-                    </div>
-
-                    <!-- Right Side Controls -->
-                    <div class="flex items-center space-x-4 z-10">
-                        <!-- User Profile Dropdown -->
-                        <div class="relative">
-                            <button
-                                class="user-button flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-                                on:click={toggleDropdown}
-                            >
-                                <!-- User Icon SVG -->
-                                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                            </button>
-
-                            {#if activeDropdown}
-                                <div
-                                    class="user-dropdown absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5"
-                                    transition:fade={{ duration: 200 }}
-                                >
-                                    <div class="px-4 py-2 text-sm text-gray-700 border-b">
-                                        {#if userProfile?.email}
-                                            <p class="font-medium">{userProfile.email}</p>
-                                        {/if}
-                                    </div>
-                                    <button
-                                        class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                        on:click={handleLogout}
-                                    >
-                                        <!-- Logout Icon SVG -->
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                        Logout
-                                    </button>
-                                </div>
-                            {/if}
-                        </div>
-                    </div>
+                    <!-- Logout button (only visible on desktop) -->
+                    <button
+                        class="hidden md:flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                        on:click={handleLogout}
+                    >
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
                 </div>
             {:else}
                 <!-- Not logged in state -->
+                <!-- Logo (left-aligned) -->
                 <div
                     class="flex items-center cursor-pointer transform hover:scale-105 transition-transform duration-200"
                     on:click={() => handleNavigation('/')}
@@ -154,47 +104,75 @@
                     <span class="text-blue-600 font-bold text-xl">Daily <span class="text-orange-600 text-4xl align-middle">2</span> Odds</span>
                 </div>
 
-                <!-- Desktop Menu -->
-                <ul class="hidden md:flex items-center space-x-8">
-                    {#each ['about-us', 'contact', 'faq'] as route}
-                        <li>
-                            <button 
-                                on:click={() => handleNavigation(`/${route}`)}
-                                class="relative group px-3 py-2 text-gray-700 font-medium hover:text-blue-600 transition-colors duration-200"
-                                class:text-blue-600={isActive(`/${route}`)}
-                            >
-                                {route.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                                {#if isActive(`/${route}`)}
-                                    <div class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600" 
-                                         transition:fade={{ duration: 200 }}></div>
-                                {:else}
-                                    <div class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></div>
-                                {/if}
-                            </button>
-                        </li>
-                    {/each}
-                    
-                    <li>
-                        <button
-                            on:click={() => handleNavigation('/login')}
-                            class="bg-[#064b67] text-white px-6 py-2 rounded-full font-medium hover:bg-[#053a51] transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#064b67]"
-                            in:fly={{ y: -20, duration: 300 }}
-                        >
-                            Login
-                        </button>
-                    </li>
-                </ul>
+                <!-- Desktop Navigation (centered) -->
+                <div class="hidden md:flex items-center justify-center flex-1">
+                    <ul class="flex items-center space-x-8">
+                        {#each ['about-us', 'contact', 'faq'] as route}
+                            <li>
+                                <button 
+                                    on:click={() => handleNavigation(`/${route}`)}
+                                    class="relative group px-3 py-2 text-gray-700 font-medium hover:text-blue-600 transition-colors duration-200"
+                                    class:text-blue-600={isActive(`/${route}`)}
+                                >
+                                    {route.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                    {#if isActive(`/${route}`)}
+                                        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600" 
+                                             transition:fade={{ duration: 200 }}></div>
+                                    {:else}
+                                        <div class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></div>
+                                    {/if}
+                                </button>
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
 
-                <!-- Mobile Login Button -->
-                <button 
+                <!-- Desktop Login Button (right-aligned) -->
+                <button
+                    class="hidden md:block bg-[#064b67] text-white px-6 py-2 rounded-full font-medium hover:bg-[#053a51] transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#064b67]"
                     on:click={() => handleNavigation('/login')}
-                    class="md:hidden bg-[#064b67] text-white px-6 py-2 rounded-full font-medium hover:bg-[#053a51] transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#064b67]"
                 >
                     Login
+                </button>
+
+                <!-- Mobile Burger Menu -->
+                <button
+                    class="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    on:click={toggleMobileMenu}
+                >
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                    </svg>
                 </button>
             {/if}
         </div>
     </div>
+
+    <!-- Mobile Menu Dropdown -->
+    {#if !$isAuthenticated && isMobileMenuOpen}
+        <div
+            class="md:hidden"
+            transition:fade={{ duration: 200 }}
+        >
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                {#each ['about-us', 'contact', 'faq'] as route}
+                    <button
+                        class="block w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                        class:bg-gray-50={isActive(`/${route}`)}
+                        on:click={() => handleNavigation(`/${route}`)}
+                    >
+                        {route.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </button>
+                {/each}
+                <button
+                    class="block w-full px-3 py-2 rounded-md text-base font-medium bg-[#064b67] text-white hover:bg-[#053a51]"
+                    on:click={() => handleNavigation('/login')}
+                >
+                    Login
+                </button>
+            </div>
+        </div>
+    {/if}
 </nav>
 
 <!-- Spacer to prevent content from being hidden under fixed navbar -->
