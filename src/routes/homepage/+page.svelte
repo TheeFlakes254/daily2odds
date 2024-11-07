@@ -162,65 +162,48 @@
             </section>
 
             <!-- Let me continue with Part 2 -->
-             <!-- Recent Wins Cards -->
-            <section class="mb-8 md:mb-12">
-                <div class="flex items-center justify-between mb-4 md:mb-6">
-                    <h2 class="text-xl md:text-2xl font-bold">Recent Wins</h2>
-                    <div class="border-b-4 border-[#064b67] w-16 md:w-20"></div>
-                </div>
+            <!-- Recent Wins Cards -->
+<section class="px-4 py-8 md:py-12">
+    <div class="max-w-[1400px] mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Recent Wins</h2>
+            <div class="h-1 w-20 bg-[#064b67]"></div>
+        </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-                    {#if loadingWins}
-                        {#each Array(4) as _}
-                            <div class="bg-white rounded-lg shadow-md p-3 animate-pulse">
-                                <div class="w-full h-32 bg-gray-200 rounded-md mb-2"></div>
-                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
-                            </div>
-                        {/each}
-                    {:else if recentWins.length === 0}
-                        <div class="col-span-full text-center py-8 bg-white rounded-lg shadow-md">
-                            <p class="text-gray-500">No recent wins available</p>
-                        </div>
-                    {:else}
-                        {#each recentWins as win, index}
-                            <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 card-animate">
-                                <div class="px-3 py-2 border-b flex justify-between items-center">
-                                    <span class="text-sm font-medium text-[#064b67]">{win.league}</span>
-                                    <span class="text-xs text-gray-500">{win.date}</span>
-                                </div>
-                                
-                                <div class="relative aspect-[4/3] overflow-hidden">
-                                    <img 
-                                        src={win.image} 
-                                        alt="Win slip {index + 1}"
-                                        class="w-full h-full object-cover"
-                                        loading="lazy"
-                                    >
-                                    <div class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                                        Won
-                                    </div>
-                                </div>
-                                
-                                <div class="p-3">
-                                    <p class="text-sm font-medium text-gray-800 mb-1 line-clamp-2">{win.teams}</p>
-                                    <div class="flex justify-between items-center text-xs">
-                                        <span class="text-gray-600">Odds: {win.odds}</span>
-                                        <span class="text-green-600 font-medium">+{win.profit}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="px-3 py-2 bg-gray-50 rounded-b-lg flex justify-between items-center text-xs">
-                                    <span class="text-gray-600">Verified ✓</span>
-                                    <button class="text-[#064b67] hover:text-blue-700 font-medium">
-                                        Details →
-                                    </button>
-                                </div>
-                            </div>
-                        {/each}
-                    {/if}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {#if loadingWins}
+                {#each Array(3) as _, i}
+                    <div class="bg-white rounded-xl animate-pulse">
+                        <div class="h-80 bg-gray-200 rounded-xl border-4 border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]"></div>
+                    </div>
+                {/each}
+            {:else if recentWins.length === 0}
+                <div class="col-span-full">
+                    <div class="text-center py-12 bg-gray-50 rounded-xl border-4 border-dashed border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]">
+                        <p class="text-gray-500 font-medium">No recent wins available</p>
+                    </div>
                 </div>
-            </section>
+            {:else}
+                {#each recentWins as win, index}
+                    <div class="group relative rounded-xl overflow-hidden border-4 border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)] hover:shadow-[0_8px_30px_rgba(6,75,103,0.3)] transition-all duration-300">
+                        <!-- Image Container -->
+                        <div class="aspect-[4/5]">
+                            <img
+                                src={win.image}
+                                alt="Win slip {index + 1}"
+                                class="w-full h-full object-cover"
+                                loading="lazy"
+                            />
+                            <div class="absolute top-4 right-4 bg-green-500 text-white text-sm px-4 py-1 rounded-full font-medium shadow-lg">
+                                Won
+                            </div>
+                        </div>
+                    </div>
+                {/each}
+            {/if}
+        </div>
+    </div>
+</section>
 
             <!-- Premium Features -->
             <section class="mb-8 md:mb-12">

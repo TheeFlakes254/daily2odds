@@ -1,28 +1,42 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
     import PocketBase from 'pocketbase';
-    import Footer from "$lib/components/footer.svelte";
-
+    
+    // Initialize PocketBase client
     const pb = new PocketBase('https://odds.pockethost.io');
 
     // State variables
     let items = [];
     let loading = true;
     let userTier = 'free';
-    let itemLimit = 2;
+    let itemLimit = 2;  // Default limit for free tier
     let currentPage = 1;
     let itemsPerPage = 9;
     let totalPages = 0;
     let filterCategory = 'all';
+    let displayedItems = []; // New state for filtered items based on user tier
 
-    // Fetch user details
+    // Fetch user details and set item limits based on tier
     async function fetchUserDetails() {
         try {
             const user = pb.authStore.model;
             userTier = user?.tier || 'free';
-            itemLimit = userTier === 'silver' ? 4 : userTier === 'gold' ? Infinity : 2;
+            
+            // Set item limits based on user tier
+            switch(userTier) {
+                case 'gold':
+                    itemLimit = Infinity;  // Show all items
+                    break;
+                case 'silver':
+                    itemLimit = 4;  // Show 4 items
+                    break;
+                default:
+                    itemLimit = 2;  // Show 2 items for free tier
+            }
         } catch (error) {
             console.error('Error fetching user details:', error);
+            userTier = 'free';
+            itemLimit = 2;
         }
     }
 
@@ -47,11 +61,13 @@
                 time: item.time || 'Today',
                 status: item.status || 'Active'
             }));
-            
+
+            displayedItems = items.slice(0, itemLimit);
             totalPages = Math.ceil(response.totalItems / itemsPerPage);
         } catch (error) {
             console.error('Error in fetchItems:', error);
             items = [];
+            displayedItems = [];
         } finally {
             loading = false;
         }
@@ -105,6 +121,7 @@
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-[#064b67]">Today's Hot Picks</h1>
             <p class="mt-2 text-gray-600">Discover our carefully selected betting predictions for today</p>
+            <p class="mt-2 text-sm text-gray-500">Current Plan: {userTier.charAt(0).toUpperCase() + userTier.slice(1)} Tier</p>
         </div>
 
         <!-- Category Filter -->
@@ -128,7 +145,6 @@
                 >
                     Basketball
                 </button>
-                <!-- Add more categories as needed -->
             </div>
         </div>
 
@@ -138,38 +154,63 @@
                 <div class="col-span-full flex justify-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#064b67]"></div>
                 </div>
-            {:else if items.length === 0}
-                <div class="col-span-full text-center py-12 bg-white rounded-lg shadow">
-                    <p class="text-gray-500">No picks available for this category</p>
+            {:else if displayedItems.length === 0}
+                <div class="col-span-full text-center py-12 bg-[#064b67] rounded-lg shadow">
+                    <p class="text-white">No picks available for this category</p>
                 </div>
             {:else}
-                {#each items as item}
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
-                        {#if item.image}
-                            <img src={`https://odds.pockethost.io/api/files/Free_Tier/${item.id}/${item.image}`} 
-                                 alt="Match prediction" 
-                                 class="w-full h-48 object-cover">
-                        {/if}
+                {#each items as item, index}
+                    <div class="bg-[#064b67] rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+                        <!-- Image Container with Conditional Blur -->
+                        <div class="relative">
+                            {#if item.image}
+                                <div class="relative {index >= itemLimit ? 'blur-sm' : ''}">
+                                    <img 
+                                        src={`https://odds.pockethost.io/api/files/Free_Tier/${item.id}/${item.image}`} 
+                                        alt="Match prediction" 
+                                        class="w-full h-48 object-cover"
+                                    >
+                                </div>
+                                <!-- Upgrade Button Overlay for Locked Content -->
+                                {#if index >= itemLimit}
+                                    <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+                                        <a 
+                                            href="/payment" 
+                                            class="px-6 py-3 bg-[#064b67] text-white rounded-lg font-semibold 
+                                                   transform hover:scale-105 transition-transform duration-200 
+                                                   shadow-lg hover:shadow-xl border-2 border-white"
+                                        >
+                                            Upgrade to Premium
+                                        </a>
+                                    </div>
+                                {/if}
+                            {/if}
+                        </div>
+
                         <div class="p-6">
                             <div class="flex justify-between items-center mb-3">
-                                <span class="px-3 py-1 bg-[#064b67] text-white text-sm rounded-full">
+                                <span class="px-3 py-1 bg-white text-[#064b67] text-sm rounded-full">
                                     {item.category}
                                 </span>
-                                <span class="text-sm text-gray-500">{item.time}</span>
+                                <span class="text-sm text-gray-200">{item.time}</span>
                             </div>
-                            <p class="text-gray-800 mb-4">{item.description}</p>
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-gray-500">Odds: {item.odds}</span>
-                                <span class="text-green-500">Success Rate: {item.successRate}</span>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                                <span class={`text-sm ${item.status === 'Active' ? 'text-green-500' : 'text-red-500'}`}>
-                                    Status: {item.status}
-                                </span>
-                                {#if userTier === 'free' && items.indexOf(item) >= 2}
-                                    <a href="/payment" class="text-sm text-blue-600 hover:text-blue-800">
-                                        Upgrade to View
-                                    </a>
+                            <p class="text-white mb-4">
+                                {index >= itemLimit ? '🔒 Premium Content - Upgrade to view this prediction' : item.description}
+                            </p>
+                            <div class="mt-4 pt-4 border-t border-gray-100/20 flex justify-between items-center">
+                                {#if index >= itemLimit}
+                                    <div class="w-full flex justify-center">
+                                        <a href="/payment" 
+                                           class="text-sm text-blue-300 hover:text-blue-200 flex items-center">
+                                            <span class="mr-2">🔓</span>
+                                            Unlock Premium Content
+                                        </a>
+                                    </div>
+                                {:else}
+                                    <div class="flex items-center space-x-4">
+                                        <span class="text-white">Odds: {item.odds}</span>
+                                        <span class="text-white">Success Rate: {item.successRate}</span>
+                                    </div>
                                 {/if}
                             </div>
                         </div>
@@ -204,10 +245,15 @@
 </div>
 
 <style>
-    /* Add any additional custom styles here */
     .transition-all {
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 300ms;
+    }
+
+    /* Add smooth transition for blur effect */
+    .blur-sm {
+        filter: blur(4px);
+        transition: filter 0.3s ease-in-out;
     }
 </style>
