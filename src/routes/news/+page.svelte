@@ -1,7 +1,6 @@
 <script>
     import { onMount } from 'svelte';
     import PocketBase from 'pocketbase';
-    import Footer from "$lib/components/footer.svelte";
 
     const pb = new PocketBase('https://odds.pockethost.io');
 
@@ -81,12 +80,6 @@
 
 <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Header -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-[#064b67]">Latest News</h1>
-            <p class="mt-2 text-gray-600">Stay updated with the latest sports betting news and insights</p>
-        </div>
-
         <!-- Search Bar -->
         <div class="mb-6">
             <div class="max-w-xl">
@@ -162,11 +155,9 @@
             </div>
         {/if}
     </div>
-    <Footer />
 </div>
 
 <style>
-    /* Add any additional custom styles here */
     input:focus {
         outline: none;
     }

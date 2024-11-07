@@ -1,9 +1,6 @@
 <script>
   import { onMount } from 'svelte';
   import PocketBase from 'pocketbase';
-  import Footer from '$lib/components/footer.svelte';
-  import Navbar1 from '$lib/components/navbar1.svelte';
-	import Navbar from '$lib/components/navbar.svelte';
 
   let email = '';
   let number = '';
@@ -51,7 +48,7 @@
     proofFile = event.target.files[0];
   }
 </script>
-<Navbar1/>
+
 <section class="bg-white dark:bg-gray-900">
   <div class="py-8 lg:py-16 px-4 mx-auto max-w-screen-md">
     <h2 class="mb-4 text-4xl tracking-tight font-extrabold text-center text-[#064b67] dark:text-white">Payment Form</h2>
@@ -93,7 +90,11 @@
           required
         />
       </div>
-      <button type="submit" class="py-3 px-5 text-sm font-medium text-center text-white rounded-lg bg-[#064b67] sm:w-fit hover:bg-[#053b56] focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" disabled={isLoading}>
+      <button 
+        type="submit" 
+        class="py-3 px-5 text-sm font-medium text-center text-white rounded-lg bg-[#064b67] sm:w-fit hover:bg-[#053b56] focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800" 
+        disabled={isLoading}
+      >
         {#if isLoading}
           <div class="loader"></div>
         {:else}
@@ -102,11 +103,12 @@
       </button>
     </form>
     {#if statusMessage}
-      <div class="mt-4 text-center text-sm">{statusMessage}</div>
+      <div class="{statusMessage.includes('success') ? 'text-green-600' : 'text-red-600'} mt-4 text-center text-sm font-medium">
+        {statusMessage}
+      </div>
     {/if}
   </div>
 </section>
-<Footer/>
 
 <style>
   .loader {
