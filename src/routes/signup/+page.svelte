@@ -15,13 +15,24 @@
     const handleSignUp = async () => {
         isLoading = true;
         try {
+            // Get current date for subscription start
+            const currentDate = new Date();
+            
+            // Set expiration date to 7 days from now for free tier
+            const expirationDate = new Date();
+            expirationDate.setDate(currentDate.getDate() + 7);
+
             const data = {
                 username,
                 email,
                 emailVisibility: true,
                 password,
                 passwordConfirm: password,
-                number: Number(number)
+                number: Number(number),
+                // Add free tier information
+                tier: "free",
+                subscriptionStart: currentDate.toISOString(),
+                subscriptionExpires: expirationDate.toISOString()
             };
 
             const record = await pb.collection('user').create(data);
@@ -159,7 +170,7 @@
     <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
         <div class="bg-white p-6 rounded-lg shadow-lg w-80 sm:w-96">
             <h3 class="text-lg font-bold text-center">Registration Successful!</h3>
-            <p class="text-center">You have successfully registered.</p>
+            <p class="text-center">You have successfully registered with a FREE tier subscription.</p>
             <div class="flex justify-center mt-4">
                 <button
                     class="bg-[#064b67] text-white px-4 py-2 rounded-md hover:bg-[#ffd700] text-sm sm:text-base"

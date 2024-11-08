@@ -1,4 +1,3 @@
-<!-- src/routes/login/+page.svelte -->
 <script>
     import PocketBase from 'pocketbase';
     import { goto } from '$app/navigation';
@@ -60,66 +59,54 @@
     };
 </script>
 
-<div class="min-h-screen w-full bg-white flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-    <div class="w-full max-w-sm sm:max-w-md">
-        <div class="bg-[#064b67] rounded-lg shadow-xl p-6 sm:p-8 relative">
-            <h2 class="text-white text-xl sm:text-2xl font-bold mb-6 text-center">Welcome Back</h2>
+<div class="flex justify-center items-center min-h-screen bg-white px-4 md:px-0">
+    <div class="bg-[#064b67] p-4 sm:p-6 md:p-8 rounded-lg shadow-md w-full max-w-[90%] sm:max-w-md md:max-w-lg lg:w-96 relative">
+        <h2 class="text-white text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6">Welcome Back</h2>
 
-            {#if isLoading}
-                <div class="absolute top-4 right-4">
-                    <div class="loader"></div>
-                </div>
-            {/if}
+        {#if errorMessage}
+            <p class="text-red-400 mb-4 text-xs sm:text-sm md:text-base">{errorMessage}</p>
+        {/if}
 
-            <form on:submit|preventDefault={handleLogin} class="space-y-6">
-                <div class="space-y-2">
-                    <input
-                        type="email"
-                        bind:value={email}
-                        class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all text-base sm:text-lg"
-                        placeholder="Email"
-                        required
-                    />
-                </div>
+        {#if successMessage}
+            <p class="text-green-400 mb-4 text-xs sm:text-sm md:text-base text-center">{successMessage}</p>
+        {/if}
 
-                <div class="space-y-2">
-                    <input
-                        type="password"
-                        bind:value={password}
-                        class="w-full px-4 py-2 bg-transparent border-b-2 border-gray-300 text-white placeholder-gray-300 focus:outline-none focus:border-yellow-500 transition-all text-base sm:text-lg"
-                        placeholder="Password"
-                        required
-                    />
-                </div>
+        <form on:submit|preventDefault={handleLogin} class="w-full">
+            <div class="mb-4">
+                <input
+                    type="email"
+                    bind:value={email}
+                    class="w-full px-3 py-2 bg-transparent border-b-2 text-white focus:outline-none focus:border-b-4 text-xs sm:text-sm md:text-base"
+                    placeholder="Email"
+                    required
+                />
+            </div>
 
-                <button
-                    type="submit"
-                    class="w-full bg-[#ffd700] text-teal-900 font-bold px-6 py-3 rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors disabled:opacity-50 text-base sm:text-lg"
-                    disabled={isLoading}
-                >
-                    {isLoading ? 'Logging in...' : 'Login'}
-                </button>
+            <div class="mb-6">
+                <input
+                    type="password"
+                    bind:value={password}
+                    class="w-full px-3 py-2 bg-transparent border-b-2 text-white focus:outline-none focus:border-b-4 text-xs sm:text-sm md:text-base"
+                    placeholder="Password"
+                    required
+                />
+            </div>
 
-                {#if errorMessage}
-                    <div class="text-red-400 text-sm sm:text-base text-center mt-2">
-                        {errorMessage}
-                    </div>
-                {/if}
+            <button
+                type="submit"
+                class="mx-auto flex justify-center items-center bg-[#ffd700] text-teal-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 w-full text-xs sm:text-sm md:text-base h-10 sm:h-11 md:h-12"
+                disabled={isLoading}
+            >
+                {isLoading ? 'Logging in...' : 'Login'}
+            </button>
+        </form>
 
-                {#if successMessage}
-                    <div class="text-green-400 text-sm sm:text-base text-center mt-2">
-                        {successMessage}
-                    </div>
-                {/if}
-            </form>
+        <p class="text-center text-white mt-4 text-xs sm:text-sm md:text-base">
+            Don't have an account? 
+            <a href="/signup" class="text-yellow-400 hover:underline ml-1">Sign Up</a>
+        </p>
 
-            <p class="text-center text-white mt-6 text-sm sm:text-base">
-                Don't have an account? 
-                <a href="/signup" class="text-yellow-400 hover:underline ml-1">
-                    Sign Up
-                </a>
-            </p>
-        </div>
+        <div class={`loader ${isLoading ? 'visible' : ''}`}></div>
     </div>
 </div>
 
@@ -136,6 +123,10 @@
         width: 24px;
         height: 24px;
         animation: spin 1s linear infinite;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: none;
     }
 
     @media (min-width: 640px) {
@@ -146,10 +137,8 @@
         }
     }
 
-    :global(body), :global(html) {
-        height: 100%;
-        margin: 0;
-        padding: 0;
+    .loader.visible {
+        display: block;
     }
 
     input::placeholder {
@@ -162,5 +151,11 @@
         -webkit-text-fill-color: white;
         -webkit-box-shadow: 0 0 0px 1000px #064b67 inset;
         transition: background-color 5000s ease-in-out 0s;
+    }
+
+    @media (max-width: 640px) {
+        input {
+            font-size: 16px !important; /* Prevents zoom on mobile devices */
+        }
     }
 </style>

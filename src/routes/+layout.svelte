@@ -1,6 +1,7 @@
 <script>
   import "../app.css";  // Import your global styles
   import Navbar from "$lib/components/navbar.svelte";
+  import SupportChat from "$lib/components/SupportChat.svelte";
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -11,6 +12,7 @@
   <footer class="mt-auto py-4 text-center text-gray-600">
     <p>© {new Date().getFullYear()} Daily 2 Odds. All rights reserved.</p>
   </footer>
+  <SupportChat />
 </div>
 
 <style>

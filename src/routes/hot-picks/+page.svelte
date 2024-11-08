@@ -1,56 +1,79 @@
+<!-- 
+  BettingPicks.svelte
+  A component that displays betting predictions with tiered access control.
+  Features:
+  - User tier-based content access (Free/Silver/Gold)
+  - Real-time updates
+  - Category filtering
+  - Pagination
+  - Responsive grid layout
+-->
+
 <script>
     import { onMount, onDestroy } from 'svelte';
     import PocketBase from 'pocketbase';
     
-    // Initialize PocketBase client
+    // ---------------
+    // Configuration
+    // ---------------
     const pb = new PocketBase('https://odds.pockethost.io');
 
-    // State variables
-    let items = [];
-    let loading = true;
-    let userTier = 'free';
-    let itemLimit = 2;  // Default limit for free tier
-    let currentPage = 1;
-    let itemsPerPage = 9;
-    let totalPages = 0;
-    let filterCategory = 'all';
-    let displayedItems = []; // New state for filtered items based on user tier
+    // ---------------
+    // State Management
+    // ---------------
+    let items = [];                    // All fetched items
+    let loading = true;                // Loading state indicator
+    let userTier = 'free';            // User's subscription tier
+    let itemLimit = 2;                 // Number of items user can view
+    let currentPage = 1;               // Current page number
+    let itemsPerPage = 9;             // Items to show per page
+    let totalPages = 0;               // Total number of pages
+    let filterCategory = 'all';        // Current category filter
+    let displayedItems = [];           // Items filtered by user tier
 
-    // Fetch user details and set item limits based on tier
+    // ---------------
+    // User Management
+    // ---------------
     async function fetchUserDetails() {
         try {
             const user = pb.authStore.model;
             userTier = user?.tier || 'free';
             
-            // Set item limits based on user tier
+            // Set viewing limits based on subscription tier
             switch(userTier) {
                 case 'gold':
-                    itemLimit = Infinity;  // Show all items
+                    itemLimit = Infinity;  // Unlimited access
                     break;
                 case 'silver':
-                    itemLimit = 4;  // Show 4 items
+                    itemLimit = 4;         // Premium access
                     break;
                 default:
-                    itemLimit = 2;  // Show 2 items for free tier
+                    itemLimit = 2;         // Basic access
             }
         } catch (error) {
             console.error('Error fetching user details:', error);
+            // Fallback to free tier on error
             userTier = 'free';
             itemLimit = 2;
         }
     }
 
-    // Fetch betting items with pagination
+    // ---------------
+    // Data Fetching
+    // ---------------
     async function fetchItems(page = 1) {
         try {
             loading = true;
+            // Apply category filter if not showing all
             const filter = filterCategory !== 'all' ? `category = "${filterCategory}"` : '';
             
+            // Fetch items with pagination and filtering
             const response = await pb.collection('Free_Tier').getList(page, itemsPerPage, {
                 sort: '-created',
                 filter: filter
             });
             
+            // Transform and normalize item data
             items = response.items.map(item => ({
                 id: item.id,
                 image: item.image,
@@ -62,6 +85,7 @@
                 status: item.status || 'Active'
             }));
 
+            // Apply tier-based content restrictions
             displayedItems = items.slice(0, itemLimit);
             totalPages = Math.ceil(response.totalItems / itemsPerPage);
         } catch (error) {
@@ -73,8 +97,11 @@
         }
     }
 
-    // Subscribe to real-time updates
+    // ---------------
+    // Real-time Updates
+    // ---------------
     function subscribeToOddsUpdates() {
+        // Subscribe to all changes in the Free_Tier collection
         pb.collection('Free_Tier').subscribe('*', (e) => {
             if (e.action === 'create' || e.action === 'update' || e.action === 'delete') {
                 fetchItems(currentPage);
@@ -82,7 +109,9 @@
         });
     }
 
-    // Pagination controls
+    // ---------------
+    // Pagination Controls
+    // ---------------
     function nextPage() {
         if (currentPage < totalPages) {
             currentPage++;
@@ -97,13 +126,18 @@
         }
     }
 
-    // Category filter
+    // ---------------
+    // Filtering
+    // ---------------
     function handleCategoryChange(category) {
         filterCategory = category;
         currentPage = 1;
         fetchItems(1);
     }
 
+    // ---------------
+    // Lifecycle Hooks
+    // ---------------
     onMount(async () => {
         await fetchUserDetails();
         await fetchItems();
@@ -111,20 +145,22 @@
     });
 
     onDestroy(() => {
+        // Cleanup subscription on component destroy
         pb.collection('Free_Tier').unsubscribe('*');
     });
 </script>
 
+<!-- Main Container -->
 <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Header -->
+        <!-- Header Section -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-[#064b67]">Today's Hot Picks</h1>
             <p class="mt-2 text-gray-600">Discover our carefully selected betting predictions for today</p>
             <p class="mt-2 text-sm text-gray-500">Current Plan: {userTier.charAt(0).toUpperCase() + userTier.slice(1)} Tier</p>
         </div>
 
-        <!-- Category Filter -->
+        <!-- Category Filter Section -->
         <div class="mb-6">
             <div class="flex flex-wrap gap-2">
                 <button
@@ -148,20 +184,23 @@
             </div>
         </div>
 
-        <!-- Picks Grid -->
+        <!-- Content Grid Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {#if loading}
+                <!-- Loading State -->
                 <div class="col-span-full flex justify-center py-12">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#064b67]"></div>
                 </div>
             {:else if displayedItems.length === 0}
+                <!-- Empty State -->
                 <div class="col-span-full text-center py-12 bg-[#064b67] rounded-lg shadow">
                     <p class="text-white">No picks available for this category</p>
                 </div>
             {:else}
+                <!-- Items Grid -->
                 {#each items as item, index}
                     <div class="bg-[#064b67] rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
-                        <!-- Image Container with Conditional Blur -->
+                        <!-- Image Section with Premium Content Overlay -->
                         <div class="relative">
                             {#if item.image}
                                 <div class="relative {index >= itemLimit ? 'blur-sm' : ''}">
@@ -171,7 +210,7 @@
                                         class="w-full h-48 object-cover"
                                     >
                                 </div>
-                                <!-- Upgrade Button Overlay for Locked Content -->
+                                <!-- Premium Content Upgrade CTA -->
                                 {#if index >= itemLimit}
                                     <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
                                         <a 
@@ -187,6 +226,7 @@
                             {/if}
                         </div>
 
+                        <!-- Content Section -->
                         <div class="p-6">
                             <div class="flex justify-between items-center mb-3">
                                 <span class="px-3 py-1 bg-white text-[#064b67] text-sm rounded-full">
@@ -197,6 +237,7 @@
                             <p class="text-white mb-4">
                                 {index >= itemLimit ? '🔒 Premium Content - Upgrade to view this prediction' : item.description}
                             </p>
+                            <!-- Footer Section -->
                             <div class="mt-4 pt-4 border-t border-gray-100/20 flex justify-between items-center">
                                 {#if index >= itemLimit}
                                     <div class="w-full flex justify-center">
@@ -219,7 +260,7 @@
             {/if}
         </div>
 
-        <!-- Pagination -->
+        <!-- Pagination Section -->
         {#if totalPages > 1}
             <div class="flex justify-center space-x-4 mt-8">
                 <button
@@ -245,13 +286,13 @@
 </div>
 
 <style>
+    /* Animation and Transition Styles */
     .transition-all {
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         transition-duration: 300ms;
     }
 
-    /* Add smooth transition for blur effect */
     .blur-sm {
         filter: blur(4px);
         transition: filter 0.3s ease-in-out;

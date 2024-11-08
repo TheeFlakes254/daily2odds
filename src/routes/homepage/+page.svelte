@@ -6,11 +6,12 @@
     const pb = new PocketBase('https://odds.pockethost.io');
 
     // State variables
-    let recentWins = [];
+    let currentSlide = 0;
     let loadingWins = true;
+    let recentWins = [];
     let userTier = 'free';
     let isSidebarOpen = false;
-    let notifications = 3;
+    let interval;
     
     // Touch handling variables
     let touchStartX = 0;
@@ -75,6 +76,19 @@
         sidebarPosition = isSidebarOpen ? 0 : -100;
     };
 
+    // Slideshow functions
+    function startAutoTransition() {
+        interval = setInterval(() => {
+            currentSlide = (currentSlide + 1) % recentWins.length;
+        }, 3000);
+    }
+
+    function setSlide(index) {
+        currentSlide = index;
+        clearInterval(interval);
+        startAutoTransition();
+    }
+
     // Fetch user details
     async function fetchUserDetails() {
         try {
@@ -108,6 +122,7 @@
     onMount(async () => {
         await fetchUserDetails();
         await fetchRecentWins();
+        startAutoTransition();
     });
 </script>
 
@@ -122,10 +137,8 @@
     <Sidebar {isSidebarOpen} {toggleSidebar} style="transform: translateX({sidebarPosition}%)" />
     
     <main class="flex-1 overflow-x-hidden">
-        <!-- Enhanced Mobile Header -->
+        <!-- Mobile Header -->
         <div class="md:hidden bg-[#064b67] text-white sticky top-0 z-30 shadow-md">
-            
-            
             <!-- Swipe Indicator -->
             <div 
                 class="absolute left-0 top-0 h-full w-1 bg-white/10 transition-opacity duration-200"
@@ -161,49 +174,58 @@
                 </div>
             </section>
 
-            <!-- Let me continue with Part 2 -->
-            <!-- Recent Wins Cards -->
-<section class="px-4 py-8 md:py-12">
-    <div class="max-w-[1400px] mx-auto">
-        <div class="flex items-center justify-between mb-8">
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Recent Wins</h2>
-            <div class="h-1 w-20 bg-[#064b67]"></div>
-        </div>
+            <!-- Recent Wins Slideshow -->
+            <section class="px-4 py-8 md:py-12">
+                <div class="max-w-[1400px] mx-auto">
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Recent Wins</h2>
+                        <div class="h-1 w-20 bg-[#064b67]"></div>
+                    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {#if loadingWins}
-                {#each Array(3) as _, i}
-                    <div class="bg-white rounded-xl animate-pulse">
-                        <div class="h-80 bg-gray-200 rounded-xl border-4 border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]"></div>
-                    </div>
-                {/each}
-            {:else if recentWins.length === 0}
-                <div class="col-span-full">
-                    <div class="text-center py-12 bg-gray-50 rounded-xl border-4 border-dashed border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]">
-                        <p class="text-gray-500 font-medium">No recent wins available</p>
-                    </div>
-                </div>
-            {:else}
-                {#each recentWins as win, index}
-                    <div class="group relative rounded-xl overflow-hidden border-4 border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)] hover:shadow-[0_8px_30px_rgba(6,75,103,0.3)] transition-all duration-300">
-                        <!-- Image Container -->
-                        <div class="aspect-[4/5]">
-                            <img
-                                src={win.image}
-                                alt="Win slip {index + 1}"
-                                class="w-full h-full object-cover"
-                                loading="lazy"
-                            />
-                            <div class="absolute top-4 right-4 bg-green-500 text-white text-sm px-4 py-1 rounded-full font-medium shadow-lg">
-                                Won
+                    {#if loadingWins}
+                        <div class="bg-white rounded-xl animate-pulse">
+                            <div class="h-80 bg-gray-200 rounded-xl border-4 border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]"></div>
+                        </div>
+                    {:else if recentWins.length === 0}
+                        <div class="text-center py-12 bg-gray-50 rounded-xl border-4 border-dashed border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]">
+                            <p class="text-gray-500 font-medium">No recent wins available</p>
+                        </div>
+                    {:else}
+                        <div class="relative">
+                            <!-- Slideshow Container -->
+                            <div class="relative h-[500px] rounded-xl overflow-hidden border-4 border-[#064b67] shadow-[0_4px_20px_rgba(6,75,103,0.2)]">
+                                {#each recentWins as win, index}
+                                    <div
+                                        class="absolute top-0 left-0 w-full h-full transition-opacity duration-500"
+                                        style="opacity: {currentSlide === index ? '1' : '0'}; pointer-events: {currentSlide === index ? 'auto' : 'none'}"
+                                    >
+                                        <img
+                                            src={win.image}
+                                            alt="Win slip {index + 1}"
+                                            class="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
+                                        <div class="absolute top-4 right-4 bg-green-500 text-white text-sm px-4 py-1 rounded-full font-medium shadow-lg">
+                                            Won
+                                        </div>
+                                    </div>
+                                {/each}
+                            </div>
+
+                            <!-- Indicator Circles -->
+                            <div class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                                {#each recentWins as _, index}
+                                    <button
+                                        class="w-3 h-3 rounded-full transition-all duration-300 {currentSlide === index ? 'bg-[#064b67]' : 'bg-gray-300'}"
+                                        on:click={() => setSlide(index)}
+                                        aria-label="Go to slide {index + 1}"
+                                    ></button>
+                                {/each}
                             </div>
                         </div>
-                    </div>
-                {/each}
-            {/if}
-        </div>
-    </div>
-</section>
+                    {/if}
+                </div>
+            </section>
 
             <!-- Premium Features -->
             <section class="mb-8 md:mb-12">
@@ -213,32 +235,31 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                    <!-- Premium feature cards remain unchanged -->
                     {#each [
                         {title: 'VIP Picks', description: 'Get exclusive access to our highest probability predictions with up to 90% success rate.', requiresGold: true},
                         {title: 'Expert Analysis', description: 'Detailed match analysis and insights from our professional tipsters.', requiresGold: false},
                         {title: 'Live Tips', description: 'Real-time betting tips and in-play predictions for maximum opportunities.', requiresGold: true}
                     ] as feature}
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
-                        <div class="bg-gradient-to-r from-yellow-400 to-yellow-500 p-3 md:p-4 text-[#064b67]">
-                            <h3 class="text-lg md:text-xl font-bold">{feature.title}</h3>
+                        <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300">
+                            <div class="bg-gradient-to-r from-yellow-400 to-yellow-500 p-3 md:p-4 text-[#064b67]">
+                                <h3 class="text-lg md:text-xl font-bold">{feature.title}</h3>
+                            </div>
+                            <div class="p-4 md:p-6">
+                                <p class="text-gray-600 mb-4 text-sm md:text-base">{feature.description}</p>
+                                {#if (feature.requiresGold && userTier !== 'gold') || (!feature.requiresGold && userTier === 'free')}
+                                    <div class="text-center">
+                                        <a href="/payment" 
+                                           class="inline-block bg-[#064b67] text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors duration-300 text-sm md:text-base font-semibold w-full sm:w-auto">
+                                            Upgrade to Access
+                                        </a>
+                                    </div>
+                                {:else}
+                                    <div class="text-center text-green-500 font-semibold">
+                                        <span>✓ Available</span>
+                                    </div>
+                                {/if}
+                            </div>
                         </div>
-                        <div class="p-4 md:p-6">
-                            <p class="text-gray-600 mb-4 text-sm md:text-base">{feature.description}</p>
-                            {#if (feature.requiresGold && userTier !== 'gold') || (!feature.requiresGold && userTier === 'free')}
-                                <div class="text-center">
-                                    <a href="/payment" 
-                                       class="inline-block bg-[#064b67] text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors duration-300 text-sm md:text-base font-semibold w-full sm:w-auto">
-                                        Upgrade to Access
-                                    </a>
-                                </div>
-                            {:else}
-                                <div class="text-center text-green-500 font-semibold">
-                                    <span>✓ Available</span>
-                                </div>
-                            {/if}
-                        </div>
-                    </div>
                     {/each}
                 </div>
             </section>
@@ -256,10 +277,10 @@
                         {label: 'Active Users', value: '10K+'},
                         {label: 'Daily Picks', value: '50+'}
                     ] as stat}
-                    <div class="bg-white rounded-xl shadow-md p-4 md:p-6 text-center hover:shadow-lg transition-all duration-300">
-                        <p class="text-gray-500 text-sm md:text-base mb-2">{stat.label}</p>
-                        <p class="text-2xl md:text-3xl font-bold text-[#064b67] stat-number">{stat.value}</p>
-                    </div>
+                        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 text-center hover:shadow-lg transition-all duration-300">
+                            <p class="text-gray-500 text-sm md:text-base mb-2">{stat.label}</p>
+                            <p class="text-2xl md:text-3xl font-bold text-[#064b67] stat-number">{stat.value}</p>
+                        </div>
                     {/each}
                 </div>
             </section>
@@ -268,33 +289,23 @@
 </div>
 
 <style>
-    /* Enhanced mobile styles */
-    @media (max-width: 768px) {
-        .sidebar-open::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 25;
-            backdrop-filter: blur(2px);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
+    /* Mobile styles continued */
+    .mobile-menu-button {
+        transition: all 0.3s ease;
+    }
 
-        .sidebar-open.dragging::before {
-            opacity: 1;
-        }
+    .dragging .mobile-menu-button {
+        transform: scale(0.95);
+    }
 
-        .mobile-menu-button {
-            transition: all 0.3s ease;
-        }
+    /* Slideshow specific styles */
+    .transition-opacity {
+        transition: opacity 500ms ease-in-out;
+    }
 
-        .dragging .mobile-menu-button {
-            transform: scale(0.95);
-        }
+    /* Indicator circles hover effect */
+    button:hover {
+        transform: scale(1.2);
     }
 
     /* Swipe indicator animation */
@@ -341,16 +352,7 @@
         }
     }
 
-    /* Enhanced hover effects */
-    .hover\:shadow-lg {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .hover\:shadow-lg:hover {
-        transform: translateY(-2px);
-    }
-
-    /* Loading animation refinements */
+    /* Loading animation */
     .animate-pulse {
         animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
@@ -360,6 +362,15 @@
         50% { opacity: 0.5; }
     }
 
+    /* Enhanced hover effects */
+    .hover\:shadow-lg {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover\:shadow-lg:hover {
+        transform: translateY(-2px);
+    }
+
     /* Safe area insets */
     @supports (padding: max(0px)) {
         .mobile-header {
@@ -367,14 +378,6 @@
             padding-left: max(1rem, env(safe-area-inset-left));
             padding-right: max(1rem, env(safe-area-inset-right));
         }
-    }
-
-    /* Prevent text overflow */
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
     }
 
     /* Touch interaction improvements */
@@ -388,6 +391,14 @@
         .sidebar-open::before {
             backdrop-filter: blur(2px);
         }
+    }
+
+    /* Text overflow prevention */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 </style>
 
